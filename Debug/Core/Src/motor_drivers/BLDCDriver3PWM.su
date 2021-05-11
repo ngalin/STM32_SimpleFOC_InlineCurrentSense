@@ -1,6 +1,0 @@
-BLDCDriver.hpp:12:7:BLDCDriver::BLDCDriver()	16	static
-BLDCDriver3PWM.cpp:12:1:BLDCDriver3PWM::BLDCDriver3PWM(int, int, int, int)	24	static
-BLDCDriver3PWM.cpp:30:7:virtual void BLDCDriver3PWM::enable()	16	static
-BLDCDriver3PWM.cpp:38:6:virtual void BLDCDriver3PWM::disable()	16	static
-BLDCDriver3PWM.cpp:48:5:virtual int BLDCDriver3PWM::init()	16	static
-BLDCDriver3PWM.cpp:81:6:virtual void BLDCDriver3PWM::setPwm(float, float, float)	24	static

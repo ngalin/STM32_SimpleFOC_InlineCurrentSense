@@ -1,6 +1,0 @@
-foc_utils.cpp:21:7:float _sin(float)	16	static
-foc_utils.cpp:46:7:float _cos(float)	24	static
-cmath:290:5:constexpr typename __gnu_cxx::__promote_2<_Tp, _Up>::__type std::fmod(_Tp, _Up) [with _Tp = float; _Up = double]	24	static
-foc_utils.cpp:54:7:float _normalizeAngle(float)	24	static
-foc_utils.cpp:60:7:float _electricalAngle(float, int)	16	static
-foc_utils.cpp:67:7:float _sqrtApprox(float)	24	static

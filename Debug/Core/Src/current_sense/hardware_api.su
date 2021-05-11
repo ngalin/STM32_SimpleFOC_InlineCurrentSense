@@ -1,2 +1,0 @@
-hardware_api.cpp:19:7:float _readADCVoltage(int)	24	static
-hardware_api.cpp:30:7:float _ADCValueToVoltage(int)	16	static

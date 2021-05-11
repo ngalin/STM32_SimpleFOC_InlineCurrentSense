@@ -1,2 +1,0 @@
-CurrentSense.cpp:14:7:virtual float CurrentSense::getDCCurrent(float)	48	static
-CurrentSense.cpp:44:13:DQCurrent_s CurrentSense::getFOCCurrents(float)	72	static

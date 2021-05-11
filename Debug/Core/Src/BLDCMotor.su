@@ -1,0 +1,19 @@
+std_abs.h:75:3:constexpr float std::abs(float)	16	static
+cmath:144:3:constexpr float std::atan2(float, float)	16	static
+cmath:241:3:constexpr float std::fabs(float)	16	static
+cmath:1438:3:constexpr float std::fmin(float, float)	16	static
+BLDCMotor.cpp:15:1:BLDCMotor::BLDCMotor(int, float)	24	static
+BLDCMotor.cpp:32:6:void BLDCMotor::linkDriver(BLDCDriver*)	16	static
+BLDCMotor.cpp:37:6:virtual void BLDCMotor::init()	24	static
+BLDCMotor.cpp:72:6:virtual void BLDCMotor::disable()	16	static
+BLDCMotor.cpp:82:6:virtual void BLDCMotor::enable()	16	static
+BLDCMotor.cpp:96:6:virtual int BLDCMotor::initFOC(float, Direction)	32	static
+BLDCMotor.cpp:138:5:int BLDCMotor::alignCurrentSense()	24	static
+BLDCMotor.cpp:159:5:int BLDCMotor::alignSensor()	56	static
+BLDCMotor.cpp:235:5:int BLDCMotor::absoluteZeroSearch()	24	static
+BLDCMotor.cpp:264:5:int BLDCMotor::antiCoggingCalibration()	64	static
+BLDCMotor.cpp:364:6:virtual void BLDCMotor::loopFOC()	24	static
+BLDCMotor.cpp:417:6:virtual void BLDCMotor::move(float)	16	static
+BLDCMotor.cpp:486:6:void BLDCMotor::setPhaseVoltage(float, float, float)	80	static
+BLDCMotor.cpp:681:7:float BLDCMotor::velocityOpenloop(float)	32	static
+BLDCMotor.cpp:710:7:float BLDCMotor::angleOpenloop(float)	40	static

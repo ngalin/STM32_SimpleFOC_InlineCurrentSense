@@ -1,0 +1,6 @@
+FOCMotor.cpp:12:1:FOCMotor::FOCMotor()	16	static
+FOCMotor.cpp:50:6:void FOCMotor::linkSensor(Sensor*)	16	static
+FOCMotor.cpp:57:6:void FOCMotor::linkCurrentSense(CurrentSense*)	16	static
+FOCMotor.cpp:62:7:float FOCMotor::shaftAngle()	32	static
+FOCMotor.cpp:68:7:float FOCMotor::shaftVelocity()	32	static
+FOCMotor.cpp:74:7:float FOCMotor::electricalAngle()	16	static

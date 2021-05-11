@@ -1,0 +1,8 @@
+cmath:241:3:constexpr float std::fabs(float)	16	static
+CurrentSense.hpp:19:7:constexpr CurrentSense::CurrentSense()	16	static
+InlineCurrentSense.cpp:18:1:InlineCurrentSense::InlineCurrentSense(float, float, int, int, int)	32	static
+InlineCurrentSense.cpp:33:6:virtual void InlineCurrentSense::init()	16	static
+InlineCurrentSense.cpp:41:6:void InlineCurrentSense::calibrateOffsets()	16	static
+InlineCurrentSense.cpp:52:16:virtual PhaseCurrent_s InlineCurrentSense::getPhaseCurrents()	64	static
+InlineCurrentSense.cpp:64:5:virtual int InlineCurrentSense::driverSync(BLDCDriver*)	16	static
+InlineCurrentSense.cpp:76:5:virtual int InlineCurrentSense::driverAlign(BLDCDriver*, float)	120	static

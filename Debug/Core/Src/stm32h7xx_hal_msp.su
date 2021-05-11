@@ -1,0 +1,6 @@
+stm32h7xx_hal_msp.c:66:6:HAL_MspInit	16	static
+stm32h7xx_hal_msp.c:87:6:HAL_ADC_MspInit	56	static
+stm32h7xx_hal_msp.c:138:6:HAL_ADC_MspDeInit	16	static
+stm32h7xx_hal_msp.c:178:6:HAL_TIM_PWM_MspInit	24	static
+stm32h7xx_hal_msp.c:205:6:HAL_TIM_MspPostInit	48	static
+stm32h7xx_hal_msp.c:269:6:HAL_TIM_PWM_MspDeInit	16	static

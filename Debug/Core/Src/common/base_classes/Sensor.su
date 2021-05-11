@@ -1,0 +1,3 @@
+Sensor.cpp:18:5:virtual int Sensor::needsSearch()	16	static
+Sensor.cpp:23:7:virtual float Sensor::getVelocity()	32	static
+Sensor.cpp:42:6:virtual void Sensor::setAngle(float)	16	static

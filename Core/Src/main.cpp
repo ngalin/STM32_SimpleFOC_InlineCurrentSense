@@ -61,7 +61,6 @@ static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC3_Init(void);
 static void MX_TIM1_Init(void);
-static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 PhaseCurrent_s currents;
 float current_magnitude = 0;
@@ -86,14 +85,6 @@ float _readADCVoltage_pinA(void){
 	int raw_reading = HAL_ADC_GetValue(&hadc1);
 	HAL_ADC_Stop(&hadc1);
 	return raw_reading;
-
-//	float sum = 0;
-//
-//	for (int i = 0; i < 3; i++) {
-//		sum += HAL_ADC_GetValue(&hadc1);
-//	}
-//	return sum / 3;
-
 }
 
 float _readADCVoltage_pinB(void) {
@@ -102,12 +93,6 @@ float _readADCVoltage_pinB(void) {
 	int raw_reading = HAL_ADC_GetValue(&hadc3);
 	HAL_ADC_Stop(&hadc3);
 	return raw_reading;
-//	float sum = 0;
-//
-//	for (int i = 0; i < 3; i++) {
-//		sum += HAL_ADC_GetValue(&hadc1);
-//	}
-//	return sum / 3;
 }
 
 int _calibrate_phaseA(void) {
@@ -171,47 +156,12 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC3_Init();
   MX_TIM1_Init();
-//  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
-//  HAL_TIM_Base_Start(&htim4);
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-  //HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
-
-// calibration must occur prior to ADC start
-//  HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
-//  int cal_value1 = HAL_ADCEx_Calibration_GetValue(&hadc1, ADC_SINGLE_ENDED);
-//  HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
-//  int cal_value2 = HAL_ADCEx_Calibration_GetValue(&hadc3, ADC_SINGLE_ENDED);
-////
-//  uint16_t raw;
-//
-  //  HAL_ADC_Start(&hadc1);
-  //  HAL_ADC_Start(&hadc3);
-//  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-//  raw = HAL_ADC_GetValue(&hadc1);
-//  float voltage_adc1 = ((float)(raw - cal_value1) / 65536) * 3.3;
-//  HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
-//  raw = HAL_ADC_GetValue(&hadc3);
-//  float voltage_adc2 = ((float)(raw - cal_value2) / 65536) * 3.3;
-
-//  //open loop velocity example:
-//  float target_velocity = 2;//0;
-//  //power supply voltage [V]
-//  driver.voltage_power_supply = 24;
-//  driver.init();
-//  //link the motor and the driver
-//  motor.linkDriver(&driver);
-//  //limiting motor movements
-//  motor.voltage_limit = 3; //[V]
-//  motor.velocity_limit = 5; //[rad/s]
-//  //open loop control config:
-//  motor.controller = MotionControlType::velocity_openloop;
-//  //init motor hardware
-//  motor.init();
 
     //closed loop velocity example:
   encoder.init();
@@ -399,23 +349,12 @@ int main(void)
 	    /* USER CODE BEGIN 3 */
 //	    currents = current_sense.getPhaseCurrents();
 //	    current_magnitude = current_sense.getDCCurrent();
-
-//		  HAL_ADC_Start(&hadc1);
-//		  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-//		  raw = HAL_ADC_GetValue(&hadc1);
-//		  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-//		  float voltage_adc1 = ((float)(raw - cal_value1) * 3.3) / 65536;
-//		  voltage_adc2 = voltage_adc1;
 //
 //	  //angular set point example for PID tuning
 	  motor.loopFOC();
 	  motor.move();
 
 
-//	 //   PhaseCurrent_s currents = current_sense.getPhaseCurrents();
-//	//  current_magnitude = current_sense.getDCCurrent();
-//	  motor.loopFOC();
-//	  motor.move();
 	  if (idx % loopIdx == 0) {
 		  motor.target = targets[i];
 		  i++;
@@ -427,24 +366,6 @@ int main(void)
 	  idx++;
   }
 
-//  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SinePWM;
-//  motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
-//  motor.torque_controller = TorqueControlType::foc_current;//voltage;//foc_current;//dc_current;//voltage;
-//  motor.PID_velocity.P = 0.5;
-//  motor.PID_velocity.I = 10;
-//  motor.PID_velocity.D = 0;
-//  motor.PID_velocity.output_ramp = 1000;
-//  motor.PID_velocity.limit = 24;//FIXME - this doesn't initialise correctly
-//
-//  motor.target = 1;
-//  idx = 0;
-//  loopIdx = 10000; //at a PWM freq of 25kHz, this is 0.1s
-//  while (1) {
-//	  motor.loopFOC();
-//	  if (idx % 1000 == 0) {
-//		  motor.move(motor.target);
-//	  }
-//  }
   /* USER CODE END 3 */
 }
 
@@ -814,17 +735,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	}
 }
 
-
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
-//	if (htim->Instance == htim1.Instance) {
-//		HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-//	}
-//}
-//
-//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
-//  /* This is called after the conversion is completed */
-//	HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-//}
 /* USER CODE END 4 */
 
 /**

@@ -178,24 +178,26 @@ int main(void)
   motor.velocity_index_search = 0.1; //needs to be low otherwise index search fails.
   //set motion control loop to be used
   motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SinePWM;
-  motor.controller = MotionControlType::angle;//angle;//velocity;//torque;
-  motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
+  motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
+  motor.torque_controller = TorqueControlType::foc_current;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
   //controller config:
   //see default parameters in defaults.h
-//  motor.PID_current_q.P = 0.3; //0.03;
-//  motor.PID_current_q.I = 200; //100;
-//  motor.PID_current_q.D = 0;//.0001; //0.0001;
-//  motor.PID_current_q.output_ramp = 1000;
-//  motor.PID_current_q.limit = 24;///3;
-//
-//  motor.PID_current_d.P = 0.3;
-//  motor.PID_current_d.I = 100;
-//  motor.PID_current_d.D = 0;//.0001;
-//  motor.PID_current_d.output_ramp = 1000;
-//  motor.PID_current_d.limit = 24;//3;
+  motor.PID_current_q.P = 0.5;
+  motor.PID_current_q.I = 0.1;
+  motor.PID_current_q.D = 0;
+  motor.PID_current_q.output_ramp = 50;
+  motor.PID_current_q.limit = 1;
 
+  motor.PID_current_d.P = 0.5;
+  motor.PID_current_d.I = 0.1;
+  motor.PID_current_d.D = 0;
+  motor.PID_current_d.output_ramp = 50;
+  motor.PID_current_d.limit = 1;
+
+  motor.LPF_current_q.Tf = 0.1;
+  motor.LPF_current_d.Tf = 0.1;
 
 //  // angle P params
 //  motor.P_angle.P = 10;
@@ -225,7 +227,7 @@ int main(void)
   //default value is 300 volts per sec, ~0.3V/millisec
  // motor.PID_velocity.output_ramp = 1000;
   //velocity low pass filtering time constant
-  motor.LPF_velocity.Tf = 0.01; //0.01;
+  motor.LPF_velocity.Tf = 0.1; //0.01;
 //  //angle loop controller
 //  motor.P_angle.P = 20;
 //  //angle loop velocity limit
@@ -233,7 +235,7 @@ int main(void)
   //current sense init and linking
   current_sense.gain_b *=-1;
   // skip alignment
-  current_sense.skip_align = true;
+  current_sense.skip_align = true; //true;
 
 
   current_sense.init();
@@ -347,13 +349,12 @@ int main(void)
 	    /* USER CODE END WHILE */
 
 	    /* USER CODE BEGIN 3 */
-//	    currents = current_sense.getPhaseCurrents();
-//	    current_magnitude = current_sense.getDCCurrent();
+	    currents = current_sense.getPhaseCurrents();
+	    current_magnitude = current_sense.getDCCurrent();
 //
 //	  //angular set point example for PID tuning
 	  motor.loopFOC();
 	  motor.move();
-
 
 	  if (idx % loopIdx == 0) {
 		  motor.target = targets[i];

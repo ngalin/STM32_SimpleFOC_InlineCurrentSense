@@ -215,7 +215,7 @@ int BLDCMotor::alignSensor() {
     setPhaseVoltage(voltage_sensor_align, 0,  _3PI_2);
     //setPhaseVoltage(0, voltage_sensor_align, _3PI_2);
 //    setPhaseVoltage(0, voltage_sensor_align, _PI_2);
-    _delay(700); //FIXME - NAT changed from 700 to 700
+    _delay(7000); //FIXME - NAT changed from 700 to 7000
     float tmp = sensor->getAngle();
     zero_electric_angle = _normalizeAngle(_electricalAngle(sensor_direction*tmp, pole_pairs));
     _delay(20);

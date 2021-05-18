@@ -28,7 +28,7 @@ public:
      * @param ramp - Maximum speed of change of the output value
      * @param limit - Maximum output value
      */
-    PIDController(float P, float I, float D, float ramp, float limit);
+    PIDController(float P, float I, float D, float ramp, float limit, bool allowNegative);
     ~PIDController() = default;
 
     float operator() (float error);
@@ -44,6 +44,8 @@ protected:
     float error_prev; //!< last tracking error value
     unsigned long timestamp_prev; //!< Last execution timestamp
     float output_prev;  //!< last pid output value
+    float Ts; //Nat added - watch the control loop delta time variable
+    bool allowNegative;
 };
 
 

@@ -7,7 +7,7 @@
 
 #include "pid.hpp"
 
-PIDController::PIDController(float P, float I, float D, float ramp, float limit)
+PIDController::PIDController(float P, float I, float D, float ramp, float limit, bool allowNegative)
     : P(P)
     , I(I)
     , D(D)
@@ -16,6 +16,7 @@ PIDController::PIDController(float P, float I, float D, float ramp, float limit)
     , integral_prev(0.0)
     , error_prev(0.0)
     , output_prev(0.0)
+	, allowNegative(1)
 {
     timestamp_prev = _micros();
 }
@@ -24,7 +25,8 @@ PIDController::PIDController(float P, float I, float D, float ramp, float limit)
 float PIDController::operator() (float error){
     // calculate the time from the last call
     unsigned long timestamp_now = _micros();
-    float Ts = (timestamp_now - timestamp_prev) * 1e-6;
+    //float Ts = (timestamp_now - timestamp_prev) * 1e-6;
+    Ts = (timestamp_now - timestamp_prev) * 1e-6;
     // quick fix for strange cases (micros overflow)
     if(Ts <= 0 || Ts > 0.5) Ts = 1e-3;
 
@@ -59,5 +61,12 @@ float PIDController::operator() (float error){
     output_prev = output;
     error_prev = error;
     timestamp_prev = timestamp_now;
-    return output;
+
+    if (output < 0 && !allowNegative) { //NAT added
+    	return 0;
+    }
+    else {
+    	return output;
+    }
+//    return output;
 }

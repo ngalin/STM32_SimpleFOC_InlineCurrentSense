@@ -178,8 +178,8 @@ int main(void)
   motor.velocity_index_search = 0.1; //needs to be low otherwise index search fails.
   //set motion control loop to be used
   motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SinePWM;
-  motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
-  motor.torque_controller = TorqueControlType::foc_current;//voltage;//foc_current;//dc_current;//voltage;
+  motor.controller = MotionControlType::angle;//angle;//velocity;//torque;
+  motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
   //controller config:
@@ -205,17 +205,19 @@ int main(void)
 //  motor.P_angle.D = 0.05;
 
 	//---now set wanted values: - from cogging calibration
-	motor.P_angle.P = 1;
+	motor.P_angle.P = 0.5;
 //	motor.P_angle.I = 0.01;
 //	motor.P_angle.D = 0;
 //	motor.P_angle.limit = 1000;
+	motor.LPF_angle.Tf = 0.001;
+
 
   motor.PID_velocity.P = 0.05;//0.5;
   motor.PID_velocity.I = 1;//10;
   motor.PID_velocity.D = 0;
-//  motor.PID_velocity.output_ramp = 1000;
+  motor.PID_velocity.output_ramp = 1000;
   //motor.PID_velocity.limit = 24;//FIXME - this doesn't initialise correctly
- // motor.velocity_limit = 20; //FIXME - NAT
+  motor.velocity_limit = 20; //FIXME - NAT
 
   //velocity PI controller parameters
 //  motor.PID_velocity.P = 0.01;//0.2;//0.05;
@@ -339,7 +341,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   motor.target = 1;//2;//0.6;//3;//0.5;// 0.25;
  // motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
-  float targets[] = {0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+  float targets[] = {0, 10, 20, 30, 40, 50, 60, 50, 40, 30, 20, 10};
   int i = 0;
   int idx = 0;
 

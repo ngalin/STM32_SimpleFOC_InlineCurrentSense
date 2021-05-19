@@ -29,7 +29,6 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
-#include "stdint.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -50,8 +49,6 @@ extern "C" {
 /* USER CODE BEGIN EM */
 
 /* USER CODE END EM */
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
@@ -75,36 +72,23 @@ int _calibrate_phaseB(void);
 #define Current_PhaseB_A0_GPIO_Port GPIOA
 #define LD1_Pin GPIO_PIN_0
 #define LD1_GPIO_Port GPIOB
-
 #define PWMC_Pin6_Pin GPIO_PIN_9
 #define PWMC_Pin6_GPIO_Port GPIOE
 #define PWMB_Pin5_Pin GPIO_PIN_11
 #define PWMB_Pin5_GPIO_Port GPIOE
-
-#define LD3_Pin GPIO_PIN_14
-#define LD3_GPIO_Port GPIOB
-//#define PWMA_Pin9_Pin GPIO_PIN_15
-//#define PWMA_Pin9_GPIO_Port GPIOD
-#define PWMA_Pin9_Pin GPIO_PIN_14
-#define PWMA_Pin9_GPIO_Port GPIOE
-
 #define EncoderAU_Pin3_Pin GPIO_PIN_13
 #define EncoderAU_Pin3_GPIO_Port GPIOE
 #define EncoderAU_Pin3_EXTI_IRQn EXTI15_10_IRQn
+#define PWMA_Pin9_Pin GPIO_PIN_14
+#define PWMA_Pin9_GPIO_Port GPIOE
+#define LD3_Pin GPIO_PIN_14
+#define LD3_GPIO_Port GPIOB
 #define EncoderBV_Pin2_Pin GPIO_PIN_14
 #define EncoderBV_Pin2_GPIO_Port GPIOG
 #define EncoderBV_Pin2_EXTI_IRQn EXTI15_10_IRQn
-
-//#define EncoderAU_Pin3_Pin GPIO_PIN_14
-//#define EncoderAU_Pin3_GPIO_Port GPIOG
-//#define EncoderAU_Pin3_EXTI_IRQn EXTI15_10_IRQn
-//#define EncoderBV_Pin2_Pin GPIO_PIN_13
-//#define EncoderBV_Pin2_GPIO_Port GPIOE
-//#define EncoderBV_Pin2_EXTI_IRQn EXTI15_10_IRQn
 #define EncoderIW_Pin11_Pin GPIO_PIN_5
 #define EncoderIW_Pin11_GPIO_Port GPIOB
 #define EncoderIW_Pin11_EXTI_IRQn EXTI9_5_IRQn
-
 #define LD2_Pin GPIO_PIN_1
 #define LD2_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */

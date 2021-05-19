@@ -34,8 +34,8 @@ SimpleFOCShield is configured with the following connections:
 
 Issues:
 
-* phase current measurement is not accurate, hence cannot use true FOC
-
+* [Resolved] phase current measurement is not accurate, hence cannot use true FOC
+  - current limit has to be set ~1-2Amps, and the PID parameters of the Q/D current loops need to be adjusted to accommodate a low-resistance motor. Table included [here](https://community.simplefoc.com/t/simplefoc-v2-understanding-sensor-align/806/22) records working values. 
 
 
 Improvements:
@@ -46,7 +46,6 @@ Improvements:
 
 * given accurate current measurements not possible, implement cogging torque measurements in voltage mode
 
-  ​			
 
 Unresolved questions:
 * operating in FOC position control, encoder pulse counter does not increment properly when motor is externally pushed out of position. Hence, motor can be successfully pushed away from target position set point. Would expect this not to happen

@@ -15,6 +15,7 @@ void _delay(unsigned long ms){
 
 // function buffering _micros()
 unsigned long _micros(void){
-	return HAL_GetTick()*1000; //get microseconds
+	//return HAL_GetTick()*1000; //get microseconds
+	return TIM2->CNT; //counter should be set to 1MHz
 }
 

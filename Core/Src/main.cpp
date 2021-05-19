@@ -154,8 +154,10 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC3_Init();
   MX_TIM1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
+  HAL_TIM_Base_Start(&htim2);
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -177,7 +179,7 @@ int main(void)
  //set motion control loop to be used
  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SinePWM;
  motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
- motor.torque_controller = TorqueControlType::foc_current;//voltage;//foc_current;//dc_current;//voltage;
+ motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
  //controller config:
@@ -345,9 +347,11 @@ int main(void)
 //  driver.setPwm(0,0,3);
  while (1)
  {
-	    /* USER CODE END WHILE */
-
-	    /* USER CODE BEGIN 3 */
+//	 //read TIM2->CH1 values:
+//	 unsigned int test = TIM2->CNT;
+//	    /* USER CODE END WHILE */
+//
+//	    /* USER CODE BEGIN 3 */
 //	    currents = current_sense.getPhaseCurrents();
 //	    current_magnitude = current_sense.getDCCurrent();
 //
@@ -356,12 +360,11 @@ int main(void)
 	  motor.loopFOC();
 
 		GPIOB -> ODR &= ~GPIO_PIN_0;
-	  if (idx % 100 == 0) {
+	  if (idx % 50 == 0) {
 		  motor.move();
 		  idx = 1;
 	  }
 	  idx++;
-//	  motor.move();
 
 //	  if (idx % loopIdx == 0) {
 //		  motor.target = targets[i];

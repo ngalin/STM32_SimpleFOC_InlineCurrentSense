@@ -24,7 +24,7 @@ PIDController::PIDController(float P, float I, float D, float ramp, float limit)
 float PIDController::operator() (float error){
     // calculate the time from the last call
     unsigned long timestamp_now = _micros();
-    float Ts = (timestamp_now - timestamp_prev) * 1e-6;
+    Ts = (timestamp_now - timestamp_prev) * 1e-6;
     // quick fix for strange cases (micros overflow)
     if(Ts <= 0 || Ts > 0.5) Ts = 1e-3;
 

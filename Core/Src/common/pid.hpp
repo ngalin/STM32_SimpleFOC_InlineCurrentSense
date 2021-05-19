@@ -44,6 +44,7 @@ protected:
     float error_prev; //!< last tracking error value
     unsigned long timestamp_prev; //!< Last execution timestamp
     float output_prev;  //!< last pid output value
+    float Ts; //!<time interval in microseconds
 };
 
 

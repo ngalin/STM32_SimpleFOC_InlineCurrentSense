@@ -175,7 +175,7 @@ int main(void)
  //aligning the voltage [V]
 // motor.voltage_sensor_align = 2;
  //index search velocity [rad/s]
- motor.velocity_index_search = 0.1; //needs to be low otherwise index search fails.
+ motor.velocity_index_search = 0.5; //needs to be low otherwise index search fails. Tested to 10rad/s - doesn't fail anymore.
  //set motion control loop to be used
  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SinePWM;
  motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
@@ -222,7 +222,7 @@ int main(void)
 //  motor.PID_velocity.I = 0;//20;
 //  motor.PID_velocity.D = 0;
  //default voltage_power_supply
- motor.voltage_limit = 4;//12;
+ motor.voltage_limit = 2;//12;
  //jerk control using voltage voltage ramp
  //default value is 300 volts per sec, ~0.3V/millisec
 // motor.PID_velocity.output_ramp = 1000;
@@ -246,6 +246,7 @@ int main(void)
 
  //initialise motor
  motor.init();
+ int test = HAL_GetTickFreq();
  //align sensor and start FOC
  motor.initFOC();
 

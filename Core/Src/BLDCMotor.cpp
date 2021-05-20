@@ -213,9 +213,7 @@ int BLDCMotor::alignSensor() {
     // align the electrical phases of the motor and sensor
     // set angle -90(270 = 3PI/2) degrees
     setPhaseVoltage(voltage_sensor_align, 0,  _3PI_2);
-    //setPhaseVoltage(0, voltage_sensor_align, _3PI_2);
-//    setPhaseVoltage(0, voltage_sensor_align, _PI_2);
-    _delay(7000); //FIXME - NAT changed from 700 to 7000
+    _delay(700);
     float tmp = sensor->getAngle();
     zero_electric_angle = _normalizeAngle(_electricalAngle(sensor_direction*tmp, pole_pairs));
     _delay(20);
@@ -245,7 +243,7 @@ int BLDCMotor::absoluteZeroSearch() {
     angleOpenloop(1.5*_2PI);
     // call important for some sensors not to loose count
     // not needed for the search
-    sensor->getAngle(); //NG: may have been necessary in some instances to increase time of loop
+   // sensor->getAngle(); //NG: may have been necessary in some instances to increase time of loop
   }
   // disable motor
   setPhaseVoltage(0, 0, 0);

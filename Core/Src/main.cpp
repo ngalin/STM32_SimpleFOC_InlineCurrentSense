@@ -72,24 +72,12 @@ void _writeDutyCycle3PWM(float dc_a,  float dc_b, float dc_c, int pinA, int pinB
 
 // function reading an ADC value and returning the read voltage
 float _readADCVoltage_pinA(void){
-//	GPIOB -> ODR |= GPIO_PIN_0;
-
-	HAL_ADC_Start(&hadc1);
-	HAL_ADC_PollForConversion(&hadc1, 10);//HAL_MAX_DELAY);
-	int raw_reading = HAL_ADC_GetValue(&hadc1);
-	HAL_ADC_Stop(&hadc1);
-
-//	GPIOB -> ODR &= ~GPIO_PIN_0;
+	int raw_reading = HAL_ADC_GetValue(&hadc1); //assigned to a variable prior to return for debugging purposes
 	return raw_reading;
 }
 
 float _readADCVoltage_pinB(void) {
-//	GPIOB -> ODR |= GPIO_PIN_0;
-	HAL_ADC_Start(&hadc3);
-	HAL_ADC_PollForConversion(&hadc3, 10);//HAL_MAX_DELAY);
-	int raw_reading = HAL_ADC_GetValue(&hadc3);
-	HAL_ADC_Stop(&hadc3);
-//	GPIOB -> ODR &= ~GPIO_PIN_0;
+	int raw_reading = HAL_ADC_GetValue(&hadc3); //assigned to a variable prior to return for debugging purposes
 	return raw_reading;
 }
 
@@ -99,10 +87,7 @@ int _calibrate_phaseA(void) {
 	//during subsequent conversions
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
 	for (int i = 0; i < 100; i++) {
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 		sum += HAL_ADC_GetValue(&hadc1);
-		HAL_ADC_Stop(&hadc1);
 	}
 	return (float)(sum/100.0);
 }
@@ -113,10 +98,7 @@ int _calibrate_phaseB(void) {
 	//during subsequent conversions
 	HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
 	for (int i = 0; i < 100; i++) {
-		HAL_ADC_Start(&hadc3);
-		HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
 		sum += HAL_ADC_GetValue(&hadc3);
-		HAL_ADC_Stop(&hadc3);
 	}
 	return (float)(sum/100);
 }
@@ -127,6 +109,7 @@ int _calibrate_phaseB(void) {
   * @retval int
   */
 int loopIdx = 10000;
+float time_loop;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -162,6 +145,10 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+
+  HAL_ADC_Start(&hadc1); //ADC set to run in continuous conversion mode - hence we start conversions here
+  HAL_ADC_Start(&hadc3); //ADC set to run in continuous conversion mode - hence we start conversions here
+
 
   //closed loop velocity example:
  encoder.init();
@@ -246,7 +233,6 @@ int main(void)
 
  //initialise motor
  motor.init();
- int test = HAL_GetTickFreq();
  //align sensor and start FOC
  motor.initFOC();
 
@@ -264,6 +250,10 @@ int main(void)
  int idx = 0;
 
 //  driver.setPwm(0,0,3);
+
+ float time_prev;
+
+
  while (1)
  {
 //	 //read TIM2->CH1 values:
@@ -276,10 +266,13 @@ int main(void)
 //
 //	  //angular set point example for PID tuning
 		GPIOB -> ODR |= GPIO_PIN_0;
+	 time_prev = _micros();
 	  motor.loopFOC();
-
+	  time_loop = _micros() - time_prev;
 		GPIOB -> ODR &= ~GPIO_PIN_0;
-	  if (idx % 50 == 0) {
+
+
+	  if (idx % 1000 == 0) {
 		  motor.move();
 		  idx = 1;
 	  }

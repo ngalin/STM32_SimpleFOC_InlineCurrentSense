@@ -86,3 +86,5 @@ Notes:
   Motor clicking and generally FOC (foc_current/dc_current) control not working because PID parameters for I/Q loops and current limits where set too high 
   for the low-resistance motor that I am using. 
  
+ Replacing the HAL_GetTick()*1000 with 32-bit timer (TIM2->CH1) which is set to 1MHz improves the control loop for the I/Q currents. 
+ 

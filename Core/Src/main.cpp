@@ -108,8 +108,42 @@ int _calibrate_phaseB(void) {
   * @brief  The application entry point.
   * @retval int
   */
-int loopIdx = 10000;
+int loopIdx = 100000;
 float time_loop;
+
+float copy_target = 0;
+float lk_shaft_velocity;
+float lk_shaft_angle;
+float lk_current_sp;
+
+float copy_PID_Iq_P = 0.5;
+float copy_PID_Iq_I = 0.1;
+float copy_PID_Iq_D = 0.01;
+float copy_PID_Iq_ramp = 50;
+float copy_PID_Iq_limit = 2;
+float copy_PID_Iq_Tf = 0.01;
+
+float copy_PID_Id_P = 0.5;
+float copy_PID_Id_I = 0.1;
+float copy_PID_Id_D = 0.01;
+float copy_PID_Id_ramp = 50;
+float copy_PID_Id_limit = 2;
+float copy_PID_Id_Tf = 50;
+
+float copy_PID_velocity_P = 0.05;
+float copy_PID_velocity_I = 0.5;
+float copy_PID_velocity_D = 0;
+float copy_PID_velocity_ramp = 1000;
+float copy_PID_velocity_limit = 2;
+float copy_PID_velocity_Tf = 0;
+
+float copy_PID_angle_P = 0.5;
+float copy_PID_angle_I = 0;
+float copy_PID_angle_D = 0;
+float copy_PID_angle_ramp = 1e9;
+float copy_PID_angle_limit = 20;
+float copy_PID_angle_Tf = 0.001;
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -165,26 +199,11 @@ int main(void)
  motor.velocity_index_search = 0.5; //needs to be low otherwise index search fails. Tested to 10rad/s - doesn't fail anymore.
  //set motion control loop to be used
  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SinePWM;
- motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
+ motor.controller = MotionControlType::angle;//angle;//velocity;//torque;
  motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
- //controller config:
- //see default parameters in defaults.h
- motor.PID_current_q.P = 0.5;
- motor.PID_current_q.I = 0.1;
- motor.PID_current_q.D = 0;
- motor.PID_current_q.output_ramp = 50;
- motor.PID_current_q.limit = 1;
 
- motor.PID_current_d.P = 0.5;
- motor.PID_current_d.I = 0.1;
- motor.PID_current_d.D = 0;
- motor.PID_current_d.output_ramp = 50;
- motor.PID_current_d.limit = 1;
-
- motor.LPF_current_q.Tf = 0.1;
- motor.LPF_current_d.Tf = 0.1;
 
 //  // angle P params
 //  motor.P_angle.P = 10;
@@ -225,6 +244,8 @@ int main(void)
  current_sense.skip_align = true; //true;
 
 
+
+
  current_sense.init();
  motor.linkCurrentSense(&current_sense);
 
@@ -238,14 +259,30 @@ int main(void)
 
  _delay(100);
 
+ //controller config:
+ //see default parameters in defaults.h
+ motor.PID_current_q.P = 0.5;
+ motor.PID_current_q.I = 0.1;
+ motor.PID_current_q.D = 0.01;//0;
+ motor.PID_current_q.output_ramp = 100;//50;
+ motor.PID_current_q.limit = 2;//1;
 
+ motor.PID_current_d.P = 0.5;
+ motor.PID_current_d.I = 0.1;
+ motor.PID_current_d.D = 0.01;//0;
+ motor.PID_current_d.output_ramp = 100;//50;
+ motor.PID_current_d.limit = 1;
+
+ motor.LPF_current_q.Tf = 0.1;
+ motor.LPF_current_d.Tf = 0.1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
- motor.target = 1;//2;//0.6;//3;//0.5;// 0.25;
+ motor.target = 0;//2;//0.6;//3;//0.5;// 0.25;
 // motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
- float targets[] = {0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+// float targets[] = {0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+ float targets[] = {2.269, 0.8727};
  int i = 0;
  int idx = 0;
 
@@ -265,28 +302,65 @@ int main(void)
 //	    current_magnitude = current_sense.getDCCurrent();
 //
 //	  //angular set point example for PID tuning
-		GPIOB -> ODR |= GPIO_PIN_0;
-	 time_prev = _micros();
-	  motor.loopFOC();
-	  time_loop = _micros() - time_prev;
-		GPIOB -> ODR &= ~GPIO_PIN_0;
+//		GPIOB -> ODR |= GPIO_PIN_0;
+//	 time_prev = _micros();
 
+	 lk_shaft_velocity = motor.shaft_velocity;
+	 lk_shaft_angle = motor.shaft_angle;
+	 lk_current_sp = motor.current_sp;
+
+	 motor.PID_current_q.P = copy_PID_Iq_P;
+	 motor.PID_current_q.I = copy_PID_Iq_I;
+	 motor.PID_current_q.D = copy_PID_Iq_D;
+	 motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
+	 motor.PID_current_q.limit = copy_PID_Iq_limit;
+	 motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
+
+	 motor.PID_current_d.P = copy_PID_Id_P;
+	 motor.PID_current_d.I = copy_PID_Id_I;
+	 motor.PID_current_d.D = copy_PID_Id_D;
+	 motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
+	 motor.PID_current_d.limit = copy_PID_Id_limit;
+	 motor.LPF_current_d.Tf = copy_PID_Id_Tf;
+
+	 motor.PID_velocity.P = copy_PID_velocity_P;
+	 motor.PID_velocity.I = copy_PID_velocity_I;
+	 motor.PID_velocity.D = copy_PID_velocity_D;
+	 motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
+	 motor.PID_velocity.limit = copy_PID_velocity_limit;
+	 motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
+
+	 motor.P_angle.P = copy_PID_angle_P;
+	 motor.P_angle.I = copy_PID_angle_I;
+	 motor.P_angle.D = copy_PID_angle_D;
+	 motor.P_angle.output_ramp = copy_PID_angle_ramp;
+	 motor.P_angle.limit = copy_PID_angle_limit;
+	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
+
+	  motor.loopFOC();
+//	  time_loop = _micros() - time_prev;
+//		GPIOB -> ODR &= ~GPIO_PIN_0;
 
 	  if (idx % 1000 == 0) {
 		  motor.move();
-		  idx = 1;
+	//	  idx = 1;
+	  }
+	//  motor.target = copy_target;
+
+	  if (idx % loopIdx == 0) {
+		 // motor.target += targets[i];
+		 // motor.copy_target += targets[i];
+		  motor.target += targets[i];
+		  copy_target = motor.target;
+
+		  i++;
+		//  idx = 1;
+		 // i = i % 12;
+	  }
+	  if (i >= 2) {
+		  i = 0;
 	  }
 	  idx++;
-
-//	  if (idx % loopIdx == 0) {
-//		  motor.target = targets[i];
-//		  i++;
-//		 // i = i % 12;
-//	  }
-//	  if (i >= 12) {
-//		  i = 0;
-//	  }
-//	  idx++;
  }
 
  /* USER CODE END 3 */

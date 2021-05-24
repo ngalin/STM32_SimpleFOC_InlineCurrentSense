@@ -73,7 +73,7 @@ class BLDCMotor: public FOCMotor
     void move(float target = NOT_SET) override;
 
     float Ua, Ub, Uc;//!< Current phase voltages Ua,Ub and Uc set to motor
-    float	Ualpha, Ubeta; //!< Phase voltages U alpha and U beta used for inverse Park and Clarke transform
+    float Ualpha, Ubeta; //!< Phase voltages U alpha and U beta used for inverse Park and Clarke transform
 
     /**
      * Anti-cogging calibration flag

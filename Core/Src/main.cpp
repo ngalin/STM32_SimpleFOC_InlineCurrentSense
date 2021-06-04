@@ -183,7 +183,6 @@ int main(void)
   HAL_ADC_Start(&hadc1); //ADC set to run in continuous conversion mode - hence we start conversions here
   HAL_ADC_Start(&hadc3); //ADC set to run in continuous conversion mode - hence we start conversions here
 
-
   //closed loop velocity example:
  encoder.init();
  //link the motor to the sensor:
@@ -198,59 +197,20 @@ int main(void)
  //index search velocity [rad/s]
  motor.velocity_index_search = 0.5; //needs to be low otherwise index search fails. Tested to 10rad/s - doesn't fail anymore.
  //set motion control loop to be used
- motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SinePWM;
+ motor.foc_modulation = FOCModulationType::SinePWM;//SpaceVectorPWM;//SinePWM;
  motor.controller = MotionControlType::angle;//angle;//velocity;//torque;
- motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
+ motor.torque_controller = TorqueControlType::foc_current;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
-
-
-//  // angle P params
-//  motor.P_angle.P = 10;
-//  motor.P_angle.I = 0.005;
-//  motor.P_angle.D = 0.05;
-
-	//---now set wanted values: - from cogging calibration
-	motor.P_angle.P = 1;
-//	motor.P_angle.I = 0.01;
-//	motor.P_angle.D = 0;
-//	motor.P_angle.limit = 1000;
-
- motor.PID_velocity.P = 0.05;//0.5;
- motor.PID_velocity.I = 1;//10;
- motor.PID_velocity.D = 0;
-//  motor.PID_velocity.output_ramp = 1000;
- //motor.PID_velocity.limit = 24;//FIXME - this doesn't initialise correctly
-// motor.velocity_limit = 20; //FIXME - NAT
-
- //velocity PI controller parameters
-//  motor.PID_velocity.P = 0.01;//0.2;//0.05;
-//  motor.PID_velocity.I = 0;//20;
-//  motor.PID_velocity.D = 0;
- //default voltage_power_supply
- motor.voltage_limit = 2;//12;
- //jerk control using voltage voltage ramp
- //default value is 300 volts per sec, ~0.3V/millisec
-// motor.PID_velocity.output_ramp = 1000;
- //velocity low pass filtering time constant
- motor.LPF_velocity.Tf = 0.1; //0.01;
-//  //angle loop controller
-//  motor.P_angle.P = 20;
-//  //angle loop velocity limit
-//  motor.velocity_limit = 20;
  //current sense init and linking
  current_sense.gain_b *=-1;
  // skip alignment
  current_sense.skip_align = true; //true;
 
-
-
-
  current_sense.init();
  motor.linkCurrentSense(&current_sense);
 
  motor.anti_cogging = false;
-
 
  //initialise motor
  motor.init();
@@ -261,20 +221,33 @@ int main(void)
 
  //controller config:
  //see default parameters in defaults.h
- motor.PID_current_q.P = 0.5;
- motor.PID_current_q.I = 0.1;
- motor.PID_current_q.D = 0.01;//0;
- motor.PID_current_q.output_ramp = 100;//50;
- motor.PID_current_q.limit = 2;//1;
+ motor.PID_current_q.P = copy_PID_Iq_P;
+ motor.PID_current_q.I = copy_PID_Iq_I;
+ motor.PID_current_q.D = copy_PID_Iq_D;
+ motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
+ motor.PID_current_q.limit = copy_PID_Iq_limit;
+ motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
 
- motor.PID_current_d.P = 0.5;
- motor.PID_current_d.I = 0.1;
- motor.PID_current_d.D = 0.01;//0;
- motor.PID_current_d.output_ramp = 100;//50;
- motor.PID_current_d.limit = 1;
+ motor.PID_current_d.P = copy_PID_Id_P;
+ motor.PID_current_d.I = copy_PID_Id_I;
+ motor.PID_current_d.D = copy_PID_Id_D;
+ motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
+ motor.PID_current_d.limit = copy_PID_Id_limit;
+ motor.LPF_current_d.Tf = copy_PID_Id_Tf;
 
- motor.LPF_current_q.Tf = 0.1;
- motor.LPF_current_d.Tf = 0.1;
+ motor.PID_velocity.P = copy_PID_velocity_P;
+ motor.PID_velocity.I = copy_PID_velocity_I;
+ motor.PID_velocity.D = copy_PID_velocity_D;
+ motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
+ motor.PID_velocity.limit = copy_PID_velocity_limit;
+ motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
+
+ motor.P_angle.P = copy_PID_angle_P;
+ motor.P_angle.I = copy_PID_angle_I;
+ motor.P_angle.D = copy_PID_angle_D;
+ motor.P_angle.output_ramp = copy_PID_angle_ramp;
+ motor.P_angle.limit = copy_PID_angle_limit;
+ motor.LPF_angle.Tf = copy_PID_angle_Tf;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -343,7 +316,6 @@ int main(void)
 
 	  if (idx % 1000 == 0) {
 		  motor.move();
-	//	  idx = 1;
 	  }
 	//  motor.target = copy_target;
 

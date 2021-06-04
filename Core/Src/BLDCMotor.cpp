@@ -261,32 +261,33 @@ int BLDCMotor::absoluteZeroSearch() {
 // Anti-cogging algorithm implementation, see: http://www.roboticsproceedings.org/rss10/p42.pdf
 int BLDCMotor::antiCoggingCalibration() {
 	int exit_flag = true;
-	float limit_vel = velocity_limit;
-	float limit_volt = voltage_limit;
-	velocity_limit = velocity_index_search;
-	voltage_limit = voltage_sensor_align;
-
-	//need to put motor in open-loop position control:
-	MotionControlType requested_controller = controller;
-	FOCModulationType requested_modulation = foc_modulation;
-	TorqueControlType requested_torque_controller = torque_controller;
-
-	controller = MotionControlType::angle;
-	foc_modulation = FOCModulationType::SpaceVectorPWM;
-	torque_controller = TorqueControlType::foc_current;
-
-	//set position control PID coefficients: //TODO - fix these...may not work with all motors?
-	//---save old values:
-	float prev_P_angle_P = P_angle.P;
-	float prev_P_angle_I = P_angle.I;
-	float prev_P_angle_D = P_angle.D;
-	float prev_P_angle_limit = P_angle.limit;
-
-	//---now set wanted values:
-	P_angle.P = 1;
-	P_angle.I = 0.01;
-	P_angle.D = 0;
-	P_angle.limit = 1000;
+//	float limit_vel = velocity_limit;
+//	float limit_volt = 2;//voltage_limit;
+//	velocity_limit = velocity_index_search;
+//	voltage_limit = 2;//voltage_sensor_align;
+//
+//	//need to put motor in open-loop position control:
+//	MotionControlType requested_controller = controller;
+//	FOCModulationType requested_modulation = foc_modulation;
+//	TorqueControlType requested_torque_controller = torque_controller;
+//
+//	controller = MotionControlType::angle;
+//	foc_modulation = FOCModulationType::SinePWM;
+//	torque_controller = TorqueControlType::foc_current;
+//
+//	//set position control PID coefficients: //TODO - fix these...may not work with all motors?
+//	//---save old values:
+//	float prev_P_angle_P = P_angle.P;
+//	float prev_P_angle_I = P_angle.I;
+//	float prev_P_angle_D = P_angle.D;
+//	float prev_P_angle_limit = P_angle.limit;
+//
+//	//---now set wanted values:
+//	P_angle.P = 0.5;
+//	P_angle.I = 0.0;
+//	P_angle.D = 0;
+//	P_angle.limit = 20;
+//	LPF_angle.Tf = 0.001;
 
 	float angle = 0;
 	float angle_increment = _2PI / 3;//8192;
@@ -295,19 +296,20 @@ int BLDCMotor::antiCoggingCalibration() {
 	while (1) {
 		if (idx == 0) {
 			target = 1;
-			move(target);
+			//move(target);
 		}
 		else if (idx == 300000) {
 			target = 2;
-			move(target);
+			//move(target);
 		}
 		else if (idx == 600000) {
 			target = 2;
-			move(target);
+		//	move(target);
 		}
 		else if (idx == 1000000) {
 			break;
 		}
+		move(target);
 		loopFOC();
 		idx++;
 	}
@@ -346,13 +348,13 @@ int BLDCMotor::antiCoggingCalibration() {
 
 	setPhaseVoltage(0,  0, 0);
 	//set all modified values back:
-	P_angle.P = prev_P_angle_P;
-	P_angle.I = prev_P_angle_I;
-	P_angle.D = prev_P_angle_D;
-	P_angle.limit = prev_P_angle_limit;
-	controller = requested_controller;
-	foc_modulation = requested_modulation;
-	torque_controller = requested_torque_controller;
+//	P_angle.P = prev_P_angle_P;
+//	P_angle.I = prev_P_angle_I;
+//	P_angle.D = prev_P_angle_D;
+//	P_angle.limit = prev_P_angle_limit;
+//	controller = requested_controller;
+//	foc_modulation = requested_modulation;
+//	torque_controller = requested_torque_controller;
 	return exit_flag;
 }
 

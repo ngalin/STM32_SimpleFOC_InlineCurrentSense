@@ -127,22 +127,22 @@ float copy_PID_Id_P = 0.5;
 float copy_PID_Id_I = 0.1;
 float copy_PID_Id_D = 0.01;
 float copy_PID_Id_ramp = 50;
-float copy_PID_Id_limit = 2;
-float copy_PID_Id_Tf = 50;
+float copy_PID_Id_limit = 1;
+float copy_PID_Id_Tf = 0.01;
 
-float copy_PID_velocity_P = 0.05;
-float copy_PID_velocity_I = 0.5;
-float copy_PID_velocity_D = 0;
-float copy_PID_velocity_ramp = 1000;
-float copy_PID_velocity_limit = 2;
-float copy_PID_velocity_Tf = 0;
+float copy_PID_velocity_P = 0.1;//0.05;
+float copy_PID_velocity_I = 0.5;//0.5;
+float copy_PID_velocity_D = 0.001;//0;
+float copy_PID_velocity_ramp = 5000;//1000;
+float copy_PID_velocity_limit = 24;//2;
+float copy_PID_velocity_Tf = 0.01;//0;
 
-float copy_PID_angle_P = 0.5;
-float copy_PID_angle_I = 0;
-float copy_PID_angle_D = 0;
-float copy_PID_angle_ramp = 1e9;
-float copy_PID_angle_limit = 20;
-float copy_PID_angle_Tf = 0.001;
+float copy_PID_angle_P = 10;//0.5;
+float copy_PID_angle_I = 1;//0;
+float copy_PID_angle_D = 0;//0;
+float copy_PID_angle_ramp = 100;//1e9;
+float copy_PID_angle_limit = 10;//20;
+float copy_PID_angle_Tf = 0;//0.001;
 
 int main(void)
 {
@@ -197,9 +197,9 @@ int main(void)
  //index search velocity [rad/s]
  motor.velocity_index_search = 0.5; //needs to be low otherwise index search fails. Tested to 10rad/s - doesn't fail anymore.
  //set motion control loop to be used
- motor.foc_modulation = FOCModulationType::SinePWM;//SpaceVectorPWM;//SinePWM;
+ motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SpaceVectorPWM;//SinePWM;
  motor.controller = MotionControlType::angle;//angle;//velocity;//torque;
- motor.torque_controller = TorqueControlType::foc_current;//voltage;//foc_current;//dc_current;//voltage;
+ motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
  //current sense init and linking
@@ -255,7 +255,8 @@ int main(void)
  motor.target = 0;//2;//0.6;//3;//0.5;// 0.25;
 // motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
 // float targets[] = {0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
- float targets[] = {2.269, 0.8727};
+ float targets[] = {2.269, 0.8727}; //angle mode
+// float targets[] = {4, 8}; //velocity mode
  int i = 0;
  int idx = 0;
 
@@ -314,20 +315,21 @@ int main(void)
 //	  time_loop = _micros() - time_prev;
 //		GPIOB -> ODR &= ~GPIO_PIN_0;
 
-	  if (idx % 1000 == 0) {
+	  if (idx % 100 == 0) { //velocity mode set to 1000
 		  motor.move();
+		// idx = 1;
 	  }
+
 	//  motor.target = copy_target;
 
 	  if (idx % loopIdx == 0) {
 		 // motor.target += targets[i];
 		 // motor.copy_target += targets[i];
-		  motor.target += targets[i];
+		  motor.target += targets[i]; //when in 'angle' mode
+		  //motor.target = targets[i]; //when in 'velocity' mode
 		  copy_target = motor.target;
 
 		  i++;
-		//  idx = 1;
-		 // i = i % 12;
 	  }
 	  if (i >= 2) {
 		  i = 0;

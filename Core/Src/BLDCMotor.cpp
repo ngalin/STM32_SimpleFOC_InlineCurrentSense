@@ -293,26 +293,7 @@ int BLDCMotor::antiCoggingCalibration() {
 	float angle_increment = _2PI / 3;//8192;
 	int idx = 0;
 	//calculate various parameters for each encoder position:
-	while (1) {
 		if (idx == 0) {
-			target = 1;
-			//move(target);
-		}
-		else if (idx == 300000) {
-			target = 2;
-			//move(target);
-		}
-		else if (idx == 600000) {
-			target = 2;
-		//	move(target);
-		}
-		else if (idx == 1000000) {
-			break;
-		}
-		move(target);
-		loopFOC();
-		idx++;
-	}
 //    for (int angle = 0; angle <= _2PI; angle += angle_increment ) {
 ////      setPhaseVoltage(voltage_sensor_align, 0,  angle);
 ////      current = current_sense->getFOCCurrents(electrical_angle);

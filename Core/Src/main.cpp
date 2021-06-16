@@ -130,19 +130,19 @@ float copy_PID_Id_ramp = 50;
 float copy_PID_Id_limit = 1;
 float copy_PID_Id_Tf = 0.01;
 
-float copy_PID_velocity_P = 0.1;//0.05;
-float copy_PID_velocity_I = 0.5;//0.5;
-float copy_PID_velocity_D = 0.001;//0;
-float copy_PID_velocity_ramp = 5000;//1000;
-float copy_PID_velocity_limit = 24;//2;
-float copy_PID_velocity_Tf = 0.01;//0;
+float copy_PID_velocity_P = 0;// 0.1;//0.05;
+float copy_PID_velocity_I = 0;//0.5;//0.5;
+float copy_PID_velocity_D = 0;// 0.001;//0;
+float copy_PID_velocity_ramp = 0;// 5000;//1000;
+float copy_PID_velocity_limit = 0;// 24;//2;
+float copy_PID_velocity_Tf = 0;// 0;//0.01;//0;
 
-float copy_PID_angle_P = 10;//0.5;
-float copy_PID_angle_I = 1;//0;
-float copy_PID_angle_D = 0;//0;
-float copy_PID_angle_ramp = 100;//1e9;
-float copy_PID_angle_limit = 10;//20;
-float copy_PID_angle_Tf = 0;//0.001;
+float copy_PID_angle_P = 0;// 10;//0.5;
+float copy_PID_angle_I = 0;// 1;//0;
+float copy_PID_angle_D = 0;// 0;//0;
+float copy_PID_angle_ramp = 0;// 100;//1e9;
+float copy_PID_angle_limit = 0;// 10;//20;
+float copy_PID_angle_Tf = 0;// 0;//0.001;
 
 int main(void)
 {
@@ -172,13 +172,15 @@ int main(void)
   MX_ADC3_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
+
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
-  HAL_TIM_Base_Start(&htim2);
+  HAL_TIM_Base_Start_IT(&htim2); //timer set to 1MHz used by _micros(), will overflow every 4295 seconds
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+
 
   HAL_ADC_Start(&hadc1); //ADC set to run in continuous conversion mode - hence we start conversions here
   HAL_ADC_Start(&hadc3); //ADC set to run in continuous conversion mode - hence we start conversions here
@@ -193,12 +195,12 @@ int main(void)
  //link the motor and the driver:
  motor.linkDriver(&driver);
  //aligning the voltage [V]
-// motor.voltage_sensor_align = 2;
+ motor.voltage_sensor_align = 2;
  //index search velocity [rad/s]
  motor.velocity_index_search = 0.5; //needs to be low otherwise index search fails. Tested to 10rad/s - doesn't fail anymore.
  //set motion control loop to be used
  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SpaceVectorPWM;//SinePWM;
- motor.controller = MotionControlType::angle;//angle;//velocity;//torque;
+ motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
  motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
@@ -283,57 +285,57 @@ int main(void)
 	 lk_shaft_angle = motor.shaft_angle;
 	 lk_current_sp = motor.current_sp;
 
-	 motor.PID_current_q.P = copy_PID_Iq_P;
-	 motor.PID_current_q.I = copy_PID_Iq_I;
-	 motor.PID_current_q.D = copy_PID_Iq_D;
-	 motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
-	 motor.PID_current_q.limit = copy_PID_Iq_limit;
-	 motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
-
-	 motor.PID_current_d.P = copy_PID_Id_P;
-	 motor.PID_current_d.I = copy_PID_Id_I;
-	 motor.PID_current_d.D = copy_PID_Id_D;
-	 motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
-	 motor.PID_current_d.limit = copy_PID_Id_limit;
-	 motor.LPF_current_d.Tf = copy_PID_Id_Tf;
-
-	 motor.PID_velocity.P = copy_PID_velocity_P;
-	 motor.PID_velocity.I = copy_PID_velocity_I;
-	 motor.PID_velocity.D = copy_PID_velocity_D;
-	 motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
-	 motor.PID_velocity.limit = copy_PID_velocity_limit;
-	 motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
-
-	 motor.P_angle.P = copy_PID_angle_P;
-	 motor.P_angle.I = copy_PID_angle_I;
-	 motor.P_angle.D = copy_PID_angle_D;
-	 motor.P_angle.output_ramp = copy_PID_angle_ramp;
-	 motor.P_angle.limit = copy_PID_angle_limit;
-	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
+//	 motor.PID_current_q.P = copy_PID_Iq_P;
+//	 motor.PID_current_q.I = copy_PID_Iq_I;
+//	 motor.PID_current_q.D = copy_PID_Iq_D;
+//	 motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
+//	 motor.PID_current_q.limit = copy_PID_Iq_limit;
+//	 motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
+//
+//	 motor.PID_current_d.P = copy_PID_Id_P;
+//	 motor.PID_current_d.I = copy_PID_Id_I;
+//	 motor.PID_current_d.D = copy_PID_Id_D;
+//	 motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
+//	 motor.PID_current_d.limit = copy_PID_Id_limit;
+//	 motor.LPF_current_d.Tf = copy_PID_Id_Tf;
+//
+//	 motor.PID_velocity.P = copy_PID_velocity_P;
+//	 motor.PID_velocity.I = copy_PID_velocity_I;
+//	 motor.PID_velocity.D = copy_PID_velocity_D;
+//	 motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
+//	 motor.PID_velocity.limit = copy_PID_velocity_limit;
+//	 motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
+//
+//	 motor.P_angle.P = copy_PID_angle_P;
+//	 motor.P_angle.I = copy_PID_angle_I;
+//	 motor.P_angle.D = copy_PID_angle_D;
+//	 motor.P_angle.output_ramp = copy_PID_angle_ramp;
+//	 motor.P_angle.limit = copy_PID_angle_limit;
+//	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
 
 	  motor.loopFOC();
 //	  time_loop = _micros() - time_prev;
 //		GPIOB -> ODR &= ~GPIO_PIN_0;
 
-	  if (idx % 100 == 0) { //velocity mode set to 1000
+	  if (idx % 1000 == 0) { //velocity mode set to 1000
 		  motor.move();
 		// idx = 1;
 	  }
 
-	//  motor.target = copy_target;
+	// motor.target = copy_target;
 
-	  if (idx % loopIdx == 0) {
-		 // motor.target += targets[i];
-		 // motor.copy_target += targets[i];
-		  motor.target += targets[i]; //when in 'angle' mode
-		  //motor.target = targets[i]; //when in 'velocity' mode
-		  copy_target = motor.target;
-
-		  i++;
-	  }
-	  if (i >= 2) {
-		  i = 0;
-	  }
+//	  if (idx % loopIdx == 0) {
+//		 // motor.target += targets[i];
+//		 // motor.copy_target += targets[i];
+//		  motor.target += targets[i]; //when in 'angle' mode
+//		  //motor.target = targets[i]; //when in 'velocity' mode
+//		  copy_target = motor.target;
+//
+//		  i++;
+//	  }
+//	  if (i >= 2) {
+//		  i = 0;
+//	  }
 	  idx++;
  }
 
@@ -416,6 +418,7 @@ void SystemClock_Config(void)
     Error_Handler();
   }
   HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSE, RCC_MCODIV_1);
+  HAL_RCC_MCOConfig(RCC_MCO2, RCC_MCO2SOURCE_SYSCLK, RCC_MCODIV_15);
 }
 #else
 /**
@@ -506,6 +509,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		encoder.handleIndex();
 	}
 }
+
+// Callback: timer2 has rolled over. Occurs every 4295 seconds.
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
+{
+	if (htim == &htim2) {
+//    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+    HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+	}
+}
+
 /* USER CODE END 4 */
 
 /**

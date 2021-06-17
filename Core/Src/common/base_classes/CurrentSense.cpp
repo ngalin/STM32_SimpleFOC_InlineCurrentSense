@@ -6,7 +6,7 @@
  */
 
 #include "CurrentSense.hpp"
-
+#include "main.h" //for debugging
 
 // get current magnitude
 //   - absolute  - if no electrical_angle provided
@@ -43,6 +43,7 @@ float CurrentSense::getDCCurrent(float motor_electrical_angle){
 //   - using getPhaseCurrents internally
 DQCurrent_s CurrentSense::getFOCCurrents(float angle_el){
     // read current phase currents
+	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
     PhaseCurrent_s current = getPhaseCurrents();
 
     // calculate clarke transform
@@ -62,5 +63,6 @@ DQCurrent_s CurrentSense::getFOCCurrents(float angle_el){
     DQCurrent_s return_current;
     return_current.d = i_alpha * ct + i_beta * st;
     return_current.q = i_beta * ct - i_alpha * st;
+	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET); //debug for timing the FOC loop
     return return_current;
 }

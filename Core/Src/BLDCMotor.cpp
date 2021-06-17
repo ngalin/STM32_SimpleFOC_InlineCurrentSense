@@ -8,6 +8,7 @@
 
 #include "BLDCMotor.hpp"
 #include "math.h"
+#include "main.h"
 
 // BLDCMotor( int pp , float R)
 // - pp            - pole pair number
@@ -293,7 +294,6 @@ int BLDCMotor::antiCoggingCalibration() {
 	float angle_increment = _2PI / 3;//8192;
 	int idx = 0;
 	//calculate various parameters for each encoder position:
-		if (idx == 0) {
 //    for (int angle = 0; angle <= _2PI; angle += angle_increment ) {
 ////      setPhaseVoltage(voltage_sensor_align, 0,  angle);
 ////      current = current_sense->getFOCCurrents(electrical_angle);
@@ -344,6 +344,7 @@ int BLDCMotor::antiCoggingCalibration() {
 // The faster it can be run the better
 void BLDCMotor::loopFOC() {
   // if disabled do nothing
+	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
   if(!enabled) return;
   // if open-loop do nothing
   if( controller==MotionControlType::angle_openloop || controller==MotionControlType::velocity_openloop ) return;
@@ -352,7 +353,8 @@ void BLDCMotor::loopFOC() {
   shaft_angle = shaftAngle();
   // electrical angle - need shaftAngle to be called first
   electrical_angle = electricalAngle();
-
+//	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET); //debug for timing the FOC loop
+	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
   switch (torque_controller) {
     case TorqueControlType::voltage:
     	current.q = current_sense->getDCCurrent(electrical_angle);
@@ -370,12 +372,13 @@ void BLDCMotor::loopFOC() {
       voltage.d = 0;
       break;
     case TorqueControlType::foc_current:
+//        HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin); //debug for timing the FOC loop
       if(!current_sense) return;
       // read dq currents
       current = current_sense->getFOCCurrents(electrical_angle);
       // filter values
-      current.q = LPF_current_q(current.q);
-      current.d = LPF_current_d(current.d);
+    //  current.q = LPF_current_q(current.q);
+      //current.d = LPF_current_d(current.d);
       // calculate the phase voltages
       voltage.q = PID_current_q(current_sp - current.q);
       voltage.d = PID_current_d(-current.d);
@@ -385,9 +388,11 @@ void BLDCMotor::loopFOC() {
 //      if(monitor_port) monitor_port->println(F("MOT: no torque control selected!"));
       break;
   }
-
+//	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET); //debug for timing the FOC loop
   // set the phase voltage - FOC heart function :)
+//	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
   setPhaseVoltage(voltage.q, voltage.d, electrical_angle);
+//	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET); //debug for timing the FOC loop
 }
 
 // Iterative function running outer loop of the FOC algorithm
@@ -465,7 +470,7 @@ void BLDCMotor::move(float new_target) {
 // regular sin + cos ~300us    (no memory usaage)
 // approx  _sin + _cos ~110us  (400Byte ~ 20% of memory)
 void BLDCMotor::setPhaseVoltage(float Uq, float Ud, float angle_el) {
-
+	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
   float center;
   int sector;
   float _ca,_sa;
@@ -566,7 +571,7 @@ void BLDCMotor::setPhaseVoltage(float Uq, float Ud, float angle_el) {
     case FOCModulationType::SpaceVectorPWM :
       // Nice video explaining the SpaceVectorModulation (SVPWM) algorithm
       // https://www.youtube.com/watch?v=QMSWUMEAejg
-
+//    	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
       // the algorithm goes
       // 1) Ualpha, Ubeta
       // 2) Uout = sqrt(Ualpha^2 + Ubeta^2)
@@ -652,6 +657,7 @@ void BLDCMotor::setPhaseVoltage(float Uq, float Ud, float angle_el) {
 
   // set the voltages in driver
   driver->setPwm(Ua, Ub, Uc);
+	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET); //debug for timing the FOC loop
 }
 
 

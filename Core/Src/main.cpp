@@ -110,6 +110,9 @@ int _calibrate_phaseB(void) {
   */
 int loopIdx = 100000;
 float time_loop;
+bool initialisation_complete = false;
+bool run_foc_loop = false;
+int inc_mov_loop = 0;
 
 float copy_target = 0;
 float lk_shaft_velocity;
@@ -174,8 +177,8 @@ int main(void)
   MX_TIM2_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start(&htim1);
-  HAL_TIM_Base_Start_IT(&htim2); //timer set to 1MHz used by _micros(), will overflow every 4295 seconds
+  HAL_TIM_Base_Start_IT(&htim1); //25kHz timer - need interrupt to trigger FOC loop at this frequency
+  HAL_TIM_Base_Start_IT(&htim2); //timer set to 1MHz used by _micros(), will overflow every 4295 seconds - should do something about this overflow... TODO
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -201,7 +204,7 @@ int main(void)
  //set motion control loop to be used
  motor.foc_modulation = FOCModulationType::SpaceVectorPWM;//SpaceVectorPWM;//SinePWM;
  motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
- motor.torque_controller = TorqueControlType::voltage;//voltage;//foc_current;//dc_current;//voltage;
+ motor.torque_controller = TorqueControlType::foc_current;//voltage;//foc_current;//dc_current;//voltage;
 //  motor.controller = MotionControlType::torque;
 
  //current sense init and linking
@@ -262,10 +265,7 @@ int main(void)
  int i = 0;
  int idx = 0;
 
-//  driver.setPwm(0,0,3);
-
- float time_prev;
-
+ initialisation_complete = true;
 
  while (1)
  {
@@ -313,15 +313,24 @@ int main(void)
 //	 motor.P_angle.limit = copy_PID_angle_limit;
 //	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
 
+	 if (run_foc_loop) {
 	  motor.loopFOC();
+	 // HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+	  run_foc_loop = false;
+	 }
 //	  time_loop = _micros() - time_prev;
 //		GPIOB -> ODR &= ~GPIO_PIN_0;
 
-	  if (idx % 1000 == 0) { //velocity mode set to 1000
-		  motor.move();
-		// idx = 1;
-	  }
+//	  if (idx % 1000 == 0) { //velocity mode set to 1000
+//		  motor.move();
+//		// idx = 1;
+//	  }
 
+	  if (inc_mov_loop % 1000 == 0) {
+		  motor.move();
+		  inc_mov_loop = 0;
+		  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+	  }
 	// motor.target = copy_target;
 
 //	  if (idx % loopIdx == 0) {
@@ -511,12 +520,31 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 }
 
 // Callback: timer2 has rolled over. Occurs every 4295 seconds.
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
-{
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+	if (htim == &htim1) {
+		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+		//HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin); //verified that this should toggle the pin at 25kHz
+		if (initialisation_complete) {
+			//now run FOC loop:
+			//HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+//			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
+			run_foc_loop = true; //motor.loopFOC();
+			inc_mov_loop++;
+			//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET); //debug for timing the FOC loop
+		}
+	}
+
 	if (htim == &htim2) {
 //    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
-    HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+		//HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
 	}
+
+//	if (htim == &htim4) { //encoder should have tracked 2048 increments
+//		//  encoder_time = HAL_GetTick();
+//		//  encoder_ticks = TIM2->CNT;
+//		rotations += 1;
+//	}
 }
 
 /* USER CODE END 4 */

@@ -454,5 +454,21 @@
         </scannerConfigBuildInfo>
         	
     </storageModule>
+    	
+    <storageModule moduleId="refreshScope" versionNumber="2">
+        		
+        <configuration configurationName="Debug">
+            			
+            <resource resourceType="PROJECT" workspacePath="/STM32_SimpleFOC_InlineCurrentSense"/>
+            		
+        </configuration>
+        		
+        <configuration configurationName="Release">
+            			
+            <resource resourceType="PROJECT" workspacePath="/STM32_SimpleFOC_InlineCurrentSense"/>
+            		
+        </configuration>
+        	
+    </storageModule>
     
 </cproject>

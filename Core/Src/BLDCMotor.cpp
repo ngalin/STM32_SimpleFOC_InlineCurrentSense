@@ -344,6 +344,7 @@ int BLDCMotor::antiCoggingCalibration() {
 // The faster it can be run the better
 void BLDCMotor::loopFOC() {
   // if disabled do nothing
+	//HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
 	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
   if(!enabled) return;
   // if open-loop do nothing

@@ -25,7 +25,7 @@ PIDController::PIDController(float P, float I, float D, float ramp, float limit)
 float PIDController::operator() (float error){
     // calculate the time from the last call
 //	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET); //debug for timing the FOC loop
-
+	//HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
     unsigned long timestamp_now = _micros();
     Ts = (timestamp_now - timestamp_prev) * 1e-6;
     // quick fix for strange cases (micros overflow)

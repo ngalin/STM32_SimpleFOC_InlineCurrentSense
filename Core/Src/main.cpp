@@ -315,9 +315,9 @@ int main(void)
 
 	 if (run_foc_loop) {
 	  motor.loopFOC();
-	 // HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+	  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	  run_foc_loop = false;
-	 }
+	}
 //	  time_loop = _micros() - time_prev;
 //		GPIOB -> ODR &= ~GPIO_PIN_0;
 
@@ -326,9 +326,10 @@ int main(void)
 //		// idx = 1;
 //	  }
 
-	  if (inc_mov_loop % 1000 == 0) {
+	  if (inc_mov_loop >= 2000) {
 		  motor.move();
 		  inc_mov_loop = 0;
+		  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
 		  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	  }
 	// motor.target = copy_target;
@@ -523,7 +524,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	if (htim == &htim1) {
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+		//HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 		//HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin); //verified that this should toggle the pin at 25kHz
 		if (initialisation_complete) {
 			//now run FOC loop:
@@ -535,9 +536,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		}
 	}
 
-	if (htim == &htim2) {
+	if (htim == &htim2) { //when this timer overflows - should do something as lots of calculations will go to shit
 //    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
-		//HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+//		HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
 	}
 
 //	if (htim == &htim4) { //encoder should have tracked 2048 increments

@@ -32,6 +32,7 @@
 
 #include "BLDCMotor.hpp"
 #include "sensors/Encoder.hpp"
+#include "sensors/MagneticSensorSPI.hpp"
 #include "motor_drivers/BLDCDriver3PWM.hpp"
 #include "current_sense/InlineCurrentSense.hpp"
 

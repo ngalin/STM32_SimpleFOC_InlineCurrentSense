@@ -22,6 +22,7 @@
 #include "adc.h"
 #include "tim.h"
 #include "gpio.h"
+#include "spi.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -34,12 +35,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ROLE_MASTER; //when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
+#define ROLE_MASTER  // when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
+#define SENSOR_MAGNETIC //position sensor is MAGNETIC (AS5048A)
+//#define SENSOR_ENCODER //position sensor is ENCODER
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define TEST_SPI 0 //SPI cable super flaky - need to run this test sometimes
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -47,7 +50,13 @@
 /* USER CODE BEGIN PV */
 BLDCMotor motor = BLDCMotor(7);//,0.039);//,0.039); //(pp,phase_resistance)
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 9, 6, 8);
-Encoder encoder = Encoder(2, 3, 2048, 11);//, 11);//, 4); //these pins, and values are actually hardcoded
+#ifdef SENSOR_ENCODER
+	Encoder sensor = Encoder(2, 3, 2048, 11); //these pins, and values are actually hardcoded
+#else //SENSOR_MAGNETIC
+	//Magnetic sensor class supports only AS5048A at the moment: https://media.digikey.com/pdf/Data%20Sheets/Austriamicrosystems%20PDFs/AS5048A,B.pdf
+	MagneticSensorSPI sensor = MagneticSensorSPI(); //CS = D10 (PD14 on STM32H743), resolution bits = 14, angle register address = 0x3fff); //these pins are all hardcoded
+#endif
+
 InlineCurrentSense current_sense = InlineCurrentSense(0.01, 50.0, phaseA, phaseB); //pins are hardcoded
 /* USER CODE END PV */
 
@@ -102,6 +111,15 @@ int _calibrate_phaseB(void) {
 	}
 	return (float)(sum/100);
 }
+
+uint16_t _SPI_read(uint16_t read_command) {
+	uint8_t register_value[2] = {0x00, 0x00};
+	HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)&read_command, &register_value[0], 1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+	return ((register_value[1] << 8) | register_value[0]);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -147,6 +165,8 @@ float copy_PID_angle_ramp = 0;// 100;//1e9;
 float copy_PID_angle_limit = 0;// 10;//20;
 float copy_PID_angle_Tf = 0;// 0;//0.001;
 
+
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -156,7 +176,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -175,6 +195,8 @@ int main(void)
   MX_ADC3_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
+  MX_SPI1_Init(); //maybe need to move this call into the magneticsensorSPI class - init
+
 
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim1); //25kHz timer - need interrupt to trigger FOC loop at this frequency
@@ -188,12 +210,20 @@ int main(void)
   HAL_ADC_Start(&hadc1); //ADC set to run in continuous conversion mode - hence we start conversions here
   HAL_ADC_Start(&hadc3); //ADC set to run in continuous conversion mode - hence we start conversions here
 
-  //closed loop velocity example:
- encoder.init();
- //link the motor to the sensor:
- motor.linkSensor(&encoder);
+//  //closed loop velocity example:
+//#if SENSOR == ENCODER
+//  encoder.init();
+//  //link the motor to the sensor:
+//  motor.linkSensor(&encoder);
+//#elif SENSOR == MAGNETIC
+//  sensor.init();
+//  motor.linkSensor(&sensor);
+//#endif
+sensor.init();
+
+motor.linkSensor(&sensor);
  //driver config:
- driver.voltage_power_supply = 24;
+ driver.voltage_power_supply = 10;//24;
  driver.init();
  //link the motor and the driver:
  motor.linkDriver(&driver);
@@ -260,12 +290,28 @@ int main(void)
  motor.target = 0;//2;//0.6;//3;//0.5;// 0.25;
 // motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
 // float targets[] = {0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
- float targets[] = {2.269, 0.8727}; //angle mode
+ //float targets[] = {2.269, 0.8727}; //angle mode
 // float targets[] = {4, 8}; //velocity mode
- int i = 0;
+// int i = 0;
  int idx = 0;
 
  initialisation_complete = true;
+
+
+if (TEST_SPI) { //connections are currently super flaky - need to run this sometimes
+	uint8_t SPI_Read[4] = {0xFF,0xFF,0x00,0x00};
+	uint16_t buf;
+	float buf_angle = 0;
+	while (1) {
+		_delay(1);
+	    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+	    HAL_SPI_TransmitReceive(&hspi1, &SPI_Read[0], &SPI_Read[2], 1, HAL_MAX_DELAY);
+	    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+	    buf = ((SPI_Read[3]<<8)|SPI_Read[2])&AS5048A_RESULT_MASK;
+	    buf_angle = ((float)buf)/AS5048A_CPR * 2 * _PI;
+	    buf_angle = buf_angle; //dummy assignment to avoid -Werror about unused variable
+	}
+}
 
  while (1)
  {
@@ -329,7 +375,7 @@ int main(void)
 	  if (inc_mov_loop >= 2000) {
 		  motor.move();
 		  inc_mov_loop = 0;
-		  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+		 // HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
 		  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	  }
 	// motor.target = copy_target;
@@ -422,6 +468,7 @@ void SystemClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOMEDIUM;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 6144;
+  PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
@@ -498,6 +545,7 @@ void SystemClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOMEDIUM;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 6144;
+  PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
@@ -508,6 +556,7 @@ void SystemClock_Config(void)
 #endif
 
 /* USER CODE BEGIN 4 */
+#ifdef SENSOR_ENCODER
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == EncoderAU_Pin3_Pin) {
 		encoder.handleA();
@@ -519,6 +568,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		encoder.handleIndex();
 	}
 }
+#endif
 
 // Callback: timer2 has rolled over. Occurs every 4295 seconds.
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
@@ -547,6 +597,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //		rotations += 1;
 //	}
 }
+//
+//// This is called when SPI transmit is done
+//void HAL_SPI_TxCpltCallback (SPI_HandleTypeDef * hspi)
+//{
+//  // Set CS pin to high
+// // HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+//}
+//
+//// This is called when SPI receive is done
+//void HAL_SPI_RxCpltCallback (SPI_HandleTypeDef * hspi)
+//{
+//  // Set CS pin to high
+//  //HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+//}
+
 
 /* USER CODE END 4 */
 

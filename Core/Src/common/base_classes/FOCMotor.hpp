@@ -54,9 +54,9 @@ enum TorqueControlType{
  */
 enum FOCModulationType{
   SinePWM, //!< Sinusoidal PWM modulation
-  SpaceVectorPWM, //!< Space vector modulation method
-  Trapezoid_120,
-  Trapezoid_150
+  SpaceVectorPWM//, //!< Space vector modulation method
+  //Trapezoid_120,
+//  Trapezoid_150
 };
 
 /**

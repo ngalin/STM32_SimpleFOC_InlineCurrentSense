@@ -59,6 +59,7 @@ float _readADCVoltage_pinA(void);
 float _readADCVoltage_pinB(void);
 int _calibrate_phaseA(void);
 int _calibrate_phaseB(void);
+uint16_t _SPI_read(uint16_t _spi_data);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -83,6 +84,8 @@ int _calibrate_phaseB(void);
 #define PWMA_Pin9_GPIO_Port GPIOE
 #define LD3_Pin GPIO_PIN_14
 #define LD3_GPIO_Port GPIOB
+#define SPI1_CS_Pin GPIO_PIN_14
+#define SPI1_CS_GPIO_Port GPIOD
 #define EncoderBV_Pin2_Pin GPIO_PIN_14
 #define EncoderBV_Pin2_GPIO_Port GPIOG
 #define EncoderBV_Pin2_EXTI_IRQn EXTI15_10_IRQn

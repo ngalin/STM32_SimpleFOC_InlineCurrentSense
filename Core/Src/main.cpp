@@ -35,7 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ROLE_MASTER;  // when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
+#define ROLE_MASTER 1;  // when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -49,7 +49,8 @@
 BLDCMotor motor = BLDCMotor(7);//,0.039);//,0.039); //(pp,phase_resistance)
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 9, 6, 8);
 Encoder encoder = Encoder(2, 3, 2048, 11);//, 11);//, 4); //these pins, and values are actually hardcoded
-MagneticSensorSPI sensor = MagneticSensorSPI(10, 14, 0x3fff); //these pins are all hardcoded
+//Magnetic sensor class supports only AS5048A at the moment: https://media.digikey.com/pdf/Data%20Sheets/Austriamicrosystems%20PDFs/AS5048A,B.pdf
+MagneticSensorSPI sensor = MagneticSensorSPI(); //CS = D10 (PD14 on STM32H743), resolution bits = 14, angle register address = 0x3fff); //these pins are all hardcoded
 
 InlineCurrentSense current_sense = InlineCurrentSense(0.01, 50.0, phaseA, phaseB); //pins are hardcoded
 /* USER CODE END PV */
@@ -106,65 +107,18 @@ int _calibrate_phaseB(void) {
 	return (float)(sum/100);
 }
 
-HAL_StatusTypeDef ReadRegister(uint16_t addr, uint16_t *byte)
-{
-    HAL_StatusTypeDef hal_status;
-    uint16_t tx_data;
-    uint16_t rx_data;
-
-    //tx_data = addr | 0x0080;  // read operation
-    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
-    hal_status = HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)addr, (uint8_t*)rx_data, 1, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
-    if (hal_status == HAL_OK)
-    {
-        *byte = rx_data&AS5048A_RESULT_MASK;    // response is in the second byte
-    }
-    return hal_status;
-}
-
-uint8_t SPI_Read[6] = {0xFF,0xFF,0x00,0x00, 0x00, 0x00};
+uint8_t SPI_Read[4] = {0xFF,0xFF,0x00,0x00};
 uint16_t buf;
 uint16_t buf2;
 float nat = 0;
 float nat2 = 0;
-uint16_t _SPI_read(uint16_t _spi_data) {
-	uint16_t blah = 0;
-//    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
-//    	HAL_SPI_Transmit(&hspi1, &SPI_Read[0], 1, HAL_MAX_DELAY);
-//    	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, HAL_MAX_DELAY);
-//    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
-//    buf = ((SPI_Read[2]<<8)|SPI_Read[3])&AS5048A_RESULT_MASK;
-//    return buf;
-// //   return ((float)buf)/AS5048A_CPR * 2 * _PI;
-	//	    _delay(500);
-		    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
-		    //another try:
-		   // if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
-		    	HAL_SPI_TransmitReceive(&hspi1, &SPI_Read[0], &SPI_Read[2], 1, HAL_MAX_DELAY);
-		    	//HAL_SPI_Transmit(&hspi1, &SPI_Read[0], 1, HAL_MAX_DELAY);
-		    //}
-		    //if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
-		    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, HAL_MAX_DELAY);
-		    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, 500);
-		    //}
-		    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
-
-		    blah = ((SPI_Read[3]<<8)|SPI_Read[2])&AS5048A_RESULT_MASK;
-}
-
-void CS_Enable (void)
-{
+uint16_t _SPI_read(uint16_t read_command) {
+	uint8_t register_value[2] = {0x00, 0x00};
 	HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
-//	GPIOA->BSRR |= (1<<9)<<16;
-}
-
-void CS_Disable (void)
-{
+	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)&read_command, &register_value[0], 1, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
-//	GPIOA->BSRR |= (1<<9);
+	return ((register_value[1] << 8) | register_value[0]);
 }
-
 
 /* USER CODE END 0 */
 
@@ -330,10 +284,10 @@ int main(void)
  motor.target = 0;//2;//0.6;//3;//0.5;// 0.25;
 // motor.controller = MotionControlType::velocity;//angle;//velocity;//torque;
 // float targets[] = {0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
- float targets[] = {2.269, 0.8727}; //angle mode
+ //float targets[] = {2.269, 0.8727}; //angle mode
 // float targets[] = {4, 8}; //velocity mode
- int i = 0;
- int idx = 0;
+// int i = 0;
+ //int idx = 0;
 
  initialisation_complete = true;
 

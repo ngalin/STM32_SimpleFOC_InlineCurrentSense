@@ -290,9 +290,9 @@ int BLDCMotor::antiCoggingCalibration() {
 //	P_angle.limit = 20;
 //	LPF_angle.Tf = 0.001;
 
-	float angle = 0;
-	float angle_increment = _2PI / 3;//8192;
-	int idx = 0;
+	//float angle = 0;
+	//float angle_increment = _2PI / 3;//8192;
+	//int idx = 0;
 	//calculate various parameters for each encoder position:
 //    for (int angle = 0; angle <= _2PI; angle += angle_increment ) {
 ////      setPhaseVoltage(voltage_sensor_align, 0,  angle);

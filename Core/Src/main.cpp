@@ -22,6 +22,7 @@
 #include "adc.h"
 #include "tim.h"
 #include "gpio.h"
+#include "spi.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -34,7 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ROLE_MASTER; //when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
+#define ROLE_MASTER;  // when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,6 +49,8 @@
 BLDCMotor motor = BLDCMotor(7);//,0.039);//,0.039); //(pp,phase_resistance)
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 9, 6, 8);
 Encoder encoder = Encoder(2, 3, 2048, 11);//, 11);//, 4); //these pins, and values are actually hardcoded
+MagneticSensorSPI sensor = MagneticSensorSPI(10, 14, 0x3fff); //these pins are all hardcoded
+
 InlineCurrentSense current_sense = InlineCurrentSense(0.01, 50.0, phaseA, phaseB); //pins are hardcoded
 /* USER CODE END PV */
 
@@ -102,6 +105,67 @@ int _calibrate_phaseB(void) {
 	}
 	return (float)(sum/100);
 }
+
+HAL_StatusTypeDef ReadRegister(uint16_t addr, uint16_t *byte)
+{
+    HAL_StatusTypeDef hal_status;
+    uint16_t tx_data;
+    uint16_t rx_data;
+
+    //tx_data = addr | 0x0080;  // read operation
+    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+    hal_status = HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)addr, (uint8_t*)rx_data, 1, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+    if (hal_status == HAL_OK)
+    {
+        *byte = rx_data&AS5048A_RESULT_MASK;    // response is in the second byte
+    }
+    return hal_status;
+}
+
+uint8_t SPI_Read[6] = {0xFF,0xFF,0x00,0x00, 0x00, 0x00};
+uint16_t buf;
+uint16_t buf2;
+float nat = 0;
+float nat2 = 0;
+uint16_t _SPI_read(uint16_t _spi_data) {
+	uint16_t blah = 0;
+//    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+//    	HAL_SPI_Transmit(&hspi1, &SPI_Read[0], 1, HAL_MAX_DELAY);
+//    	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, HAL_MAX_DELAY);
+//    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+//    buf = ((SPI_Read[2]<<8)|SPI_Read[3])&AS5048A_RESULT_MASK;
+//    return buf;
+// //   return ((float)buf)/AS5048A_CPR * 2 * _PI;
+	//	    _delay(500);
+		    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+		    //another try:
+		   // if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
+		    	HAL_SPI_TransmitReceive(&hspi1, &SPI_Read[0], &SPI_Read[2], 1, HAL_MAX_DELAY);
+		    	//HAL_SPI_Transmit(&hspi1, &SPI_Read[0], 1, HAL_MAX_DELAY);
+		    //}
+		    //if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
+		    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, HAL_MAX_DELAY);
+		    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, 500);
+		    //}
+		    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+
+		    blah = ((SPI_Read[3]<<8)|SPI_Read[2])&AS5048A_RESULT_MASK;
+}
+
+void CS_Enable (void)
+{
+	HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+//	GPIOA->BSRR |= (1<<9)<<16;
+}
+
+void CS_Disable (void)
+{
+	HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+//	GPIOA->BSRR |= (1<<9);
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -147,6 +211,8 @@ float copy_PID_angle_ramp = 0;// 100;//1e9;
 float copy_PID_angle_limit = 0;// 10;//20;
 float copy_PID_angle_Tf = 0;// 0;//0.001;
 
+
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -156,7 +222,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -175,6 +241,8 @@ int main(void)
   MX_ADC3_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
+  MX_SPI1_Init(); //maybe need to move this call into the magneticsensorSPI class - init
+
 
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim1); //25kHz timer - need interrupt to trigger FOC loop at this frequency
@@ -188,12 +256,14 @@ int main(void)
   HAL_ADC_Start(&hadc1); //ADC set to run in continuous conversion mode - hence we start conversions here
   HAL_ADC_Start(&hadc3); //ADC set to run in continuous conversion mode - hence we start conversions here
 
-  //closed loop velocity example:
- encoder.init();
- //link the motor to the sensor:
- motor.linkSensor(&encoder);
+//  //closed loop velocity example:
+// encoder.init();
+// //link the motor to the sensor:
+// motor.linkSensor(&encoder);
+  sensor.init();
+  motor.linkSensor(&sensor);
  //driver config:
- driver.voltage_power_supply = 24;
+ driver.voltage_power_supply = 10;//24;
  driver.init();
  //link the motor and the driver:
  motor.linkDriver(&driver);
@@ -267,87 +337,111 @@ int main(void)
 
  initialisation_complete = true;
 
- while (1)
- {
-//	 //read TIM2->CH1 values:
-//	 unsigned int test = TIM2->CNT;
-//	    /* USER CODE END WHILE */
-//
-//	    /* USER CODE BEGIN 3 */
-//	    currents = current_sense.getPhaseCurrents();
-//	    current_magnitude = current_sense.getDCCurrent();
-//
-//	  //angular set point example for PID tuning
-//		GPIOB -> ODR |= GPIO_PIN_0;
-//	 time_prev = _micros();
 
-	 lk_shaft_velocity = motor.shaft_velocity;
-	 lk_shaft_angle = motor.shaft_angle;
-	 lk_current_sp = motor.current_sp;
 
-//	 motor.PID_current_q.P = copy_PID_Iq_P;
-//	 motor.PID_current_q.I = copy_PID_Iq_I;
-//	 motor.PID_current_q.D = copy_PID_Iq_D;
-//	 motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
-//	 motor.PID_current_q.limit = copy_PID_Iq_limit;
-//	 motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
-//
-//	 motor.PID_current_d.P = copy_PID_Id_P;
-//	 motor.PID_current_d.I = copy_PID_Id_I;
-//	 motor.PID_current_d.D = copy_PID_Id_D;
-//	 motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
-//	 motor.PID_current_d.limit = copy_PID_Id_limit;
-//	 motor.LPF_current_d.Tf = copy_PID_Id_Tf;
-//
-//	 motor.PID_velocity.P = copy_PID_velocity_P;
-//	 motor.PID_velocity.I = copy_PID_velocity_I;
-//	 motor.PID_velocity.D = copy_PID_velocity_D;
-//	 motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
-//	 motor.PID_velocity.limit = copy_PID_velocity_limit;
-//	 motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
-//
-//	 motor.P_angle.P = copy_PID_angle_P;
-//	 motor.P_angle.I = copy_PID_angle_I;
-//	 motor.P_angle.D = copy_PID_angle_D;
-//	 motor.P_angle.output_ramp = copy_PID_angle_ramp;
-//	 motor.P_angle.limit = copy_PID_angle_limit;
-//	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
+	while (1) {
+		//_SPI_read(buf);
+		_delay(1);
+		//ReadRegister(0xFFFF, &buf2);
+//	    _delay(500);
+	    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+	    //another try:
+	   // if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
+	    	HAL_SPI_TransmitReceive(&hspi1, &SPI_Read[0], &SPI_Read[2], 1, HAL_MAX_DELAY);
+	    	//HAL_SPI_Transmit(&hspi1, &SPI_Read[0], 1, HAL_MAX_DELAY);
+	    //}
+	    //if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
+	    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, HAL_MAX_DELAY);
+	    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, 500);
+	    //}
+	    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+	    buf = ((SPI_Read[2]<<8)|SPI_Read[3])&AS5048A_RESULT_MASK;
+	    buf2 = ((SPI_Read[3]<<8)|SPI_Read[2])&AS5048A_RESULT_MASK;
 
-	 if (run_foc_loop) {
-	  motor.loopFOC();
-	  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-	  run_foc_loop = false;
+	    nat = ((float)buf)/AS5048A_CPR * 2 * _PI;
+	    nat2 = ((float)buf2)/AS5048A_CPR * 2 * _PI;
 	}
-//	  time_loop = _micros() - time_prev;
-//		GPIOB -> ODR &= ~GPIO_PIN_0;
-
-//	  if (idx % 1000 == 0) { //velocity mode set to 1000
-//		  motor.move();
-//		// idx = 1;
-//	  }
-
-	  if (inc_mov_loop >= 2000) {
-		  motor.move();
-		  inc_mov_loop = 0;
-		  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-		  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-	  }
-	// motor.target = copy_target;
-
-//	  if (idx % loopIdx == 0) {
-//		 // motor.target += targets[i];
-//		 // motor.copy_target += targets[i];
-//		  motor.target += targets[i]; //when in 'angle' mode
-//		  //motor.target = targets[i]; //when in 'velocity' mode
-//		  copy_target = motor.target;
+// while (1)
+// {
+////	 //read TIM2->CH1 values:
+////	 unsigned int test = TIM2->CNT;
+////	    /* USER CODE END WHILE */
+////
+////	    /* USER CODE BEGIN 3 */
+////	    currents = current_sense.getPhaseCurrents();
+////	    current_magnitude = current_sense.getDCCurrent();
+////
+////	  //angular set point example for PID tuning
+////		GPIOB -> ODR |= GPIO_PIN_0;
+////	 time_prev = _micros();
 //
-//		  i++;
+//	 lk_shaft_velocity = motor.shaft_velocity;
+//	 lk_shaft_angle = motor.shaft_angle;
+//	 lk_current_sp = motor.current_sp;
+//
+////	 motor.PID_current_q.P = copy_PID_Iq_P;
+////	 motor.PID_current_q.I = copy_PID_Iq_I;
+////	 motor.PID_current_q.D = copy_PID_Iq_D;
+////	 motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
+////	 motor.PID_current_q.limit = copy_PID_Iq_limit;
+////	 motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
+////
+////	 motor.PID_current_d.P = copy_PID_Id_P;
+////	 motor.PID_current_d.I = copy_PID_Id_I;
+////	 motor.PID_current_d.D = copy_PID_Id_D;
+////	 motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
+////	 motor.PID_current_d.limit = copy_PID_Id_limit;
+////	 motor.LPF_current_d.Tf = copy_PID_Id_Tf;
+////
+////	 motor.PID_velocity.P = copy_PID_velocity_P;
+////	 motor.PID_velocity.I = copy_PID_velocity_I;
+////	 motor.PID_velocity.D = copy_PID_velocity_D;
+////	 motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
+////	 motor.PID_velocity.limit = copy_PID_velocity_limit;
+////	 motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
+////
+////	 motor.P_angle.P = copy_PID_angle_P;
+////	 motor.P_angle.I = copy_PID_angle_I;
+////	 motor.P_angle.D = copy_PID_angle_D;
+////	 motor.P_angle.output_ramp = copy_PID_angle_ramp;
+////	 motor.P_angle.limit = copy_PID_angle_limit;
+////	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
+//
+//	 if (run_foc_loop) {
+//	//  motor.loopFOC();
+//	  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+//	  run_foc_loop = false;
+//	}
+////	  time_loop = _micros() - time_prev;
+////		GPIOB -> ODR &= ~GPIO_PIN_0;
+//
+////	  if (idx % 1000 == 0) { //velocity mode set to 1000
+////		  motor.move();
+////		// idx = 1;
+////	  }
+//
+//	  if (inc_mov_loop >= 2000) {
+//		 // motor.move();
+//		  inc_mov_loop = 0;
+//		  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+//		  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 //	  }
-//	  if (i >= 2) {
-//		  i = 0;
-//	  }
-	  idx++;
- }
+//	// motor.target = copy_target;
+//
+////	  if (idx % loopIdx == 0) {
+////		 // motor.target += targets[i];
+////		 // motor.copy_target += targets[i];
+////		  motor.target += targets[i]; //when in 'angle' mode
+////		  //motor.target = targets[i]; //when in 'velocity' mode
+////		  copy_target = motor.target;
+////
+////		  i++;
+////	  }
+////	  if (i >= 2) {
+////		  i = 0;
+////	  }
+//	  idx++;
+// }
 
  /* USER CODE END 3 */
 }
@@ -422,6 +516,7 @@ void SystemClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOMEDIUM;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 6144;
+  PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
@@ -498,6 +593,7 @@ void SystemClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOMEDIUM;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 6144;
+  PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
@@ -547,6 +643,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //		rotations += 1;
 //	}
 }
+//
+//// This is called when SPI transmit is done
+//void HAL_SPI_TxCpltCallback (SPI_HandleTypeDef * hspi)
+//{
+//  // Set CS pin to high
+// // HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+//}
+//
+//// This is called when SPI receive is done
+//void HAL_SPI_RxCpltCallback (SPI_HandleTypeDef * hspi)
+//{
+//  // Set CS pin to high
+//  //HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+//}
+
 
 /* USER CODE END 4 */
 

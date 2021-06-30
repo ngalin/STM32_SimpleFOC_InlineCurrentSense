@@ -35,12 +35,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ROLE_MASTER 1;  // when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
+#define ROLE_MASTER  // when defined MASTER clock settings are programmed, else, SLAVE clock settings are programmed
+#define SENSOR_MAGNETIC //position sensor is MAGNETIC (AS5048A)
+//#define SENSOR_ENCODER //position sensor is ENCODER
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define TEST_SPI 0 //SPI cable super flaky - need to run this test sometimes
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -48,9 +50,12 @@
 /* USER CODE BEGIN PV */
 BLDCMotor motor = BLDCMotor(7);//,0.039);//,0.039); //(pp,phase_resistance)
 BLDCDriver3PWM driver = BLDCDriver3PWM(5, 9, 6, 8);
-Encoder encoder = Encoder(2, 3, 2048, 11);//, 11);//, 4); //these pins, and values are actually hardcoded
-//Magnetic sensor class supports only AS5048A at the moment: https://media.digikey.com/pdf/Data%20Sheets/Austriamicrosystems%20PDFs/AS5048A,B.pdf
-MagneticSensorSPI sensor = MagneticSensorSPI(); //CS = D10 (PD14 on STM32H743), resolution bits = 14, angle register address = 0x3fff); //these pins are all hardcoded
+#ifdef SENSOR_ENCODER
+	Encoder sensor = Encoder(2, 3, 2048, 11); //these pins, and values are actually hardcoded
+#else //SENSOR_MAGNETIC
+	//Magnetic sensor class supports only AS5048A at the moment: https://media.digikey.com/pdf/Data%20Sheets/Austriamicrosystems%20PDFs/AS5048A,B.pdf
+	MagneticSensorSPI sensor = MagneticSensorSPI(); //CS = D10 (PD14 on STM32H743), resolution bits = 14, angle register address = 0x3fff); //these pins are all hardcoded
+#endif
 
 InlineCurrentSense current_sense = InlineCurrentSense(0.01, 50.0, phaseA, phaseB); //pins are hardcoded
 /* USER CODE END PV */
@@ -107,11 +112,6 @@ int _calibrate_phaseB(void) {
 	return (float)(sum/100);
 }
 
-uint8_t SPI_Read[4] = {0xFF,0xFF,0x00,0x00};
-uint16_t buf;
-uint16_t buf2;
-float nat = 0;
-float nat2 = 0;
 uint16_t _SPI_read(uint16_t read_command) {
 	uint8_t register_value[2] = {0x00, 0x00};
 	HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
@@ -211,11 +211,17 @@ int main(void)
   HAL_ADC_Start(&hadc3); //ADC set to run in continuous conversion mode - hence we start conversions here
 
 //  //closed loop velocity example:
-// encoder.init();
-// //link the motor to the sensor:
-// motor.linkSensor(&encoder);
-  sensor.init();
-  motor.linkSensor(&sensor);
+//#if SENSOR == ENCODER
+//  encoder.init();
+//  //link the motor to the sensor:
+//  motor.linkSensor(&encoder);
+//#elif SENSOR == MAGNETIC
+//  sensor.init();
+//  motor.linkSensor(&sensor);
+//#endif
+sensor.init();
+
+motor.linkSensor(&sensor);
  //driver config:
  driver.voltage_power_supply = 10;//24;
  driver.init();
@@ -287,115 +293,107 @@ int main(void)
  //float targets[] = {2.269, 0.8727}; //angle mode
 // float targets[] = {4, 8}; //velocity mode
 // int i = 0;
- //int idx = 0;
+ int idx = 0;
 
  initialisation_complete = true;
 
 
-
+if (TEST_SPI) { //connections are currently super flaky - need to run this sometimes
+	uint8_t SPI_Read[4] = {0xFF,0xFF,0x00,0x00};
+	uint16_t buf;
+	float buf_angle = 0;
 	while (1) {
-		//_SPI_read(buf);
 		_delay(1);
-		//ReadRegister(0xFFFF, &buf2);
-//	    _delay(500);
 	    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
-	    //another try:
-	   // if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
-	    	HAL_SPI_TransmitReceive(&hspi1, &SPI_Read[0], &SPI_Read[2], 1, HAL_MAX_DELAY);
-	    	//HAL_SPI_Transmit(&hspi1, &SPI_Read[0], 1, HAL_MAX_DELAY);
-	    //}
-	    //if (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_READY) {
-	    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, HAL_MAX_DELAY);
-	    //	HAL_SPI_Receive(&hspi1, &SPI_Read[2], 1, 500);
-	    //}
+	    HAL_SPI_TransmitReceive(&hspi1, &SPI_Read[0], &SPI_Read[2], 1, HAL_MAX_DELAY);
 	    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
-	    buf = ((SPI_Read[2]<<8)|SPI_Read[3])&AS5048A_RESULT_MASK;
-	    buf2 = ((SPI_Read[3]<<8)|SPI_Read[2])&AS5048A_RESULT_MASK;
-
-	    nat = ((float)buf)/AS5048A_CPR * 2 * _PI;
-	    nat2 = ((float)buf2)/AS5048A_CPR * 2 * _PI;
+	    buf = ((SPI_Read[3]<<8)|SPI_Read[2])&AS5048A_RESULT_MASK;
+	    buf_angle = ((float)buf)/AS5048A_CPR * 2 * _PI;
+	    buf_angle = buf_angle; //dummy assignment to avoid -Werror about unused variable
 	}
-// while (1)
-// {
-////	 //read TIM2->CH1 values:
-////	 unsigned int test = TIM2->CNT;
-////	    /* USER CODE END WHILE */
-////
-////	    /* USER CODE BEGIN 3 */
-////	    currents = current_sense.getPhaseCurrents();
-////	    current_magnitude = current_sense.getDCCurrent();
-////
-////	  //angular set point example for PID tuning
-////		GPIOB -> ODR |= GPIO_PIN_0;
-////	 time_prev = _micros();
+}
+
+ while (1)
+ {
+//	 //read TIM2->CH1 values:
+//	 unsigned int test = TIM2->CNT;
+//	    /* USER CODE END WHILE */
 //
-//	 lk_shaft_velocity = motor.shaft_velocity;
-//	 lk_shaft_angle = motor.shaft_angle;
-//	 lk_current_sp = motor.current_sp;
+//	    /* USER CODE BEGIN 3 */
+//	    currents = current_sense.getPhaseCurrents();
+//	    current_magnitude = current_sense.getDCCurrent();
 //
-////	 motor.PID_current_q.P = copy_PID_Iq_P;
-////	 motor.PID_current_q.I = copy_PID_Iq_I;
-////	 motor.PID_current_q.D = copy_PID_Iq_D;
-////	 motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
-////	 motor.PID_current_q.limit = copy_PID_Iq_limit;
-////	 motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
-////
-////	 motor.PID_current_d.P = copy_PID_Id_P;
-////	 motor.PID_current_d.I = copy_PID_Id_I;
-////	 motor.PID_current_d.D = copy_PID_Id_D;
-////	 motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
-////	 motor.PID_current_d.limit = copy_PID_Id_limit;
-////	 motor.LPF_current_d.Tf = copy_PID_Id_Tf;
-////
-////	 motor.PID_velocity.P = copy_PID_velocity_P;
-////	 motor.PID_velocity.I = copy_PID_velocity_I;
-////	 motor.PID_velocity.D = copy_PID_velocity_D;
-////	 motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
-////	 motor.PID_velocity.limit = copy_PID_velocity_limit;
-////	 motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
-////
-////	 motor.P_angle.P = copy_PID_angle_P;
-////	 motor.P_angle.I = copy_PID_angle_I;
-////	 motor.P_angle.D = copy_PID_angle_D;
-////	 motor.P_angle.output_ramp = copy_PID_angle_ramp;
-////	 motor.P_angle.limit = copy_PID_angle_limit;
-////	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
+//	  //angular set point example for PID tuning
+//		GPIOB -> ODR |= GPIO_PIN_0;
+//	 time_prev = _micros();
+
+	 lk_shaft_velocity = motor.shaft_velocity;
+	 lk_shaft_angle = motor.shaft_angle;
+	 lk_current_sp = motor.current_sp;
+
+//	 motor.PID_current_q.P = copy_PID_Iq_P;
+//	 motor.PID_current_q.I = copy_PID_Iq_I;
+//	 motor.PID_current_q.D = copy_PID_Iq_D;
+//	 motor.PID_current_q.output_ramp = copy_PID_Iq_ramp;
+//	 motor.PID_current_q.limit = copy_PID_Iq_limit;
+//	 motor.LPF_current_q.Tf = copy_PID_Iq_Tf;
 //
-//	 if (run_foc_loop) {
-//	//  motor.loopFOC();
-//	  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-//	  run_foc_loop = false;
-//	}
-////	  time_loop = _micros() - time_prev;
-////		GPIOB -> ODR &= ~GPIO_PIN_0;
+//	 motor.PID_current_d.P = copy_PID_Id_P;
+//	 motor.PID_current_d.I = copy_PID_Id_I;
+//	 motor.PID_current_d.D = copy_PID_Id_D;
+//	 motor.PID_current_d.output_ramp = copy_PID_Id_ramp;
+//	 motor.PID_current_d.limit = copy_PID_Id_limit;
+//	 motor.LPF_current_d.Tf = copy_PID_Id_Tf;
 //
-////	  if (idx % 1000 == 0) { //velocity mode set to 1000
-////		  motor.move();
-////		// idx = 1;
-////	  }
+//	 motor.PID_velocity.P = copy_PID_velocity_P;
+//	 motor.PID_velocity.I = copy_PID_velocity_I;
+//	 motor.PID_velocity.D = copy_PID_velocity_D;
+//	 motor.PID_velocity.output_ramp = copy_PID_velocity_ramp;
+//	 motor.PID_velocity.limit = copy_PID_velocity_limit;
+//	 motor.LPF_velocity.Tf = copy_PID_velocity_Tf;
 //
-//	  if (inc_mov_loop >= 2000) {
-//		 // motor.move();
-//		  inc_mov_loop = 0;
-//		  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-//		  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+//	 motor.P_angle.P = copy_PID_angle_P;
+//	 motor.P_angle.I = copy_PID_angle_I;
+//	 motor.P_angle.D = copy_PID_angle_D;
+//	 motor.P_angle.output_ramp = copy_PID_angle_ramp;
+//	 motor.P_angle.limit = copy_PID_angle_limit;
+//	 motor.LPF_angle.Tf = copy_PID_angle_Tf;
+
+	 if (run_foc_loop) {
+	  motor.loopFOC();
+	  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+	  run_foc_loop = false;
+	}
+//	  time_loop = _micros() - time_prev;
+//		GPIOB -> ODR &= ~GPIO_PIN_0;
+
+//	  if (idx % 1000 == 0) { //velocity mode set to 1000
+//		  motor.move();
+//		// idx = 1;
 //	  }
-//	// motor.target = copy_target;
+
+	  if (inc_mov_loop >= 2000) {
+		  motor.move();
+		  inc_mov_loop = 0;
+		 // HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+		  //HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+	  }
+	// motor.target = copy_target;
+
+//	  if (idx % loopIdx == 0) {
+//		 // motor.target += targets[i];
+//		 // motor.copy_target += targets[i];
+//		  motor.target += targets[i]; //when in 'angle' mode
+//		  //motor.target = targets[i]; //when in 'velocity' mode
+//		  copy_target = motor.target;
 //
-////	  if (idx % loopIdx == 0) {
-////		 // motor.target += targets[i];
-////		 // motor.copy_target += targets[i];
-////		  motor.target += targets[i]; //when in 'angle' mode
-////		  //motor.target = targets[i]; //when in 'velocity' mode
-////		  copy_target = motor.target;
-////
-////		  i++;
-////	  }
-////	  if (i >= 2) {
-////		  i = 0;
-////	  }
-//	  idx++;
-// }
+//		  i++;
+//	  }
+//	  if (i >= 2) {
+//		  i = 0;
+//	  }
+	  idx++;
+ }
 
  /* USER CODE END 3 */
 }
@@ -558,6 +556,7 @@ void SystemClock_Config(void)
 #endif
 
 /* USER CODE BEGIN 4 */
+#ifdef SENSOR_ENCODER
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == EncoderAU_Pin3_Pin) {
 		encoder.handleA();
@@ -569,6 +568,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		encoder.handleIndex();
 	}
 }
+#endif
 
 // Callback: timer2 has rolled over. Occurs every 4295 seconds.
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
